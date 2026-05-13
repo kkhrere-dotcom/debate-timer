@@ -41,14 +41,14 @@ function saveSettingsToFile(json) {
 
 function createConsoleWindow() {
   const display = screen.getPrimaryDisplay();
-  const { height } = display.workAreaSize;
+  const { width, height } = display.workAreaSize;
   consoleWindow = new BrowserWindow({
-    width: 520,
-    height: Math.min(900, height - 40),
+    width: Math.min(680, width - 80),
+    height: Math.min(1000, height - 40),
     x: 40,
     y: 40,
-    minWidth: 420,
-    minHeight: 600,
+    minWidth: 480,
+    minHeight: 640,
     backgroundColor: '#ffffff',
     title: '콘솔 - 과학토론타이머',
     webPreferences: {
@@ -72,11 +72,13 @@ function createClockWindow() {
   }
   const display = screen.getPrimaryDisplay();
   const { width, height } = display.workAreaSize;
-  const clockW = Math.min(1100, width - 600);
+  // 콘솔이 차지하는 가로 공간을 고려해 시계 창은 오른쪽에 배치
+  const consoleRight = 40 + Math.min(680, width - 80);
+  const clockW = Math.min(1100, width - consoleRight - 80);
   clockWindow = new BrowserWindow({
-    width: Math.max(800, clockW),
+    width: Math.max(720, clockW),
     height: Math.min(720, height - 80),
-    x: Math.max(580, width - clockW - 40),
+    x: Math.max(consoleRight + 40, width - clockW - 40),
     y: 40,
     minWidth: 600,
     minHeight: 400,
