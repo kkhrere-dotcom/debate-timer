@@ -256,10 +256,12 @@ function ringBellSynth(offset, preset) {
   const t0 = audioCtx.currentTime + (offset || 0);
   const vol = Math.max(0, Math.min(1, settings.volume));
   switch (preset) {
-    case 'chime': bellChime(t0, vol); break;
-    case 'buzz':  bellBuzz(t0, vol);  break;
-    case 'gong':  bellGong(t0, vol);  break;
-    default:      bellClassic(t0, vol);
+    case 'chime':          bellChime(t0, vol); break;
+    case 'buzz':           bellBuzz(t0, vol);  break;
+    case 'gong':           bellGong(t0, vol);  break;
+    case 'classic-double': bellClassic(t0, vol); bellClassic(t0 + 0.7, vol); break;
+    case 'chime-double':   bellChime(t0, vol);   bellChime(t0 + 1.1, vol); break;
+    default:               bellClassic(t0, vol);
   }
 }
 
@@ -301,10 +303,12 @@ function previewSound(preset) {
   }
   const t0 = audioCtx.currentTime;
   switch (preset) {
-    case 'chime': bellChime(t0, vol); break;
-    case 'buzz':  bellBuzz(t0, vol); break;
-    case 'gong':  bellGong(t0, vol); break;
-    default:      bellClassic(t0, vol);
+    case 'chime':          bellChime(t0, vol); break;
+    case 'buzz':           bellBuzz(t0, vol); break;
+    case 'gong':           bellGong(t0, vol); break;
+    case 'classic-double': bellClassic(t0, vol); bellClassic(t0 + 0.7, vol); break;
+    case 'chime-double':   bellChime(t0, vol);   bellChime(t0 + 1.1, vol); break;
+    default:               bellClassic(t0, vol);
   }
 }
 
@@ -802,11 +806,13 @@ async function addSoundFiles(files) {
 
 function buildBellOptions(currentValue) {
   const opts = [
-    { val: '',        label: '⚙ 기본값' },
-    { val: 'classic', label: '🔔 종 (기본)' },
-    { val: 'chime',   label: '🎐 차임' },
-    { val: 'buzz',    label: '🔊 부저' },
-    { val: 'gong',    label: '🥢 종(저음)' },
+    { val: '',                label: '⚙ 기본값' },
+    { val: 'classic',         label: '🔔 종 (기본)' },
+    { val: 'classic-double',  label: '🔔🔔 종 두 번' },
+    { val: 'chime',           label: '🎐 차임' },
+    { val: 'chime-double',    label: '🎐🎐 차임 두 번' },
+    { val: 'buzz',            label: '🔊 부저' },
+    { val: 'gong',            label: '🥢 종(저음)' },
   ];
   modalSettings.customSounds.forEach((s) => {
     opts.push({ val: 'custom:' + s.id, label: '🎵 ' + s.name });
