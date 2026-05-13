@@ -107,6 +107,11 @@ html, body {
   user-select: none;
   transition: background 0.2s, color 0.2s;
 }
+
+/* 시계/팝업 윈도우 투명도. body에 .with-clock-opacity / .popup 클래스가 붙음 */
+body.with-clock-opacity {
+  background: color-mix(in srgb, var(--bg) calc(var(--clock-opacity, 100) * 1%), transparent);
+}
 body {
   display: flex;
   flex-direction: column;
@@ -263,7 +268,7 @@ body.console {
 /* ============ 팝업(미니) 윈도우 ============ */
 body.popup {
   padding: 8px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) calc(var(--popup-opacity, 100) * 1%), transparent);
   border-radius: 12px;
   -webkit-app-region: drag;
   display: flex;
@@ -272,6 +277,7 @@ body.popup {
   overflow: hidden;
   box-shadow: 0 6px 24px rgba(0,0,0,0.18);
   position: relative;
+  background: color-mix(in srgb, var(--bg) calc(var(--popup-opacity, 100) * 1%), transparent);
 }
 body.popup button { -webkit-app-region: no-drag; }
 .popup .popup-close-x {
@@ -625,6 +631,32 @@ body.popup button { -webkit-app-region: no-drag; }
   font-variant-numeric: tabular-nums;
   color: var(--fg-faint);
   font-size: 12px;
+}
+
+.opacity-section {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.opacity-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+.opacity-hint {
+  font-size: 11px;
+  color: var(--fg-faint);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.opacity-section .volume-row {
+  margin-top: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .bulk-apply-section {

@@ -12,6 +12,10 @@ function render(state) {
   if (!state) return;
   if (state.theme) applyTheme(state.theme);
   if (state.title) applyTitle(state.title);
+  if (typeof state.clockOpacity === 'number') {
+    document.documentElement.style.setProperty('--clock-opacity', String(state.clockOpacity));
+    document.body.classList.toggle('with-clock-opacity', state.clockOpacity < 100);
+  }
 
   const stageEl = $('stage');
   stageEl.textContent = state.stage;

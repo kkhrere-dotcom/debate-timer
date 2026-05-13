@@ -67,6 +67,8 @@ const DEFAULT_SETTINGS = {
   title: '과학토론대회',
   bellPreset: 'classic',
   volume: 0.7,
+  popupOpacity: 100, // 0-100, 100 = fully opaque
+  clockOpacity: 100,
   phases: buildDefaultPhases(),
   scenarioPresets: [],
   customSounds: [],
@@ -81,6 +83,8 @@ function parseSettings(raw) {
       title: parsed.title || DEFAULT_SETTINGS.title,
       bellPreset: parsed.bellPreset || DEFAULT_SETTINGS.bellPreset,
       volume: typeof parsed.volume === 'number' ? parsed.volume : DEFAULT_SETTINGS.volume,
+      popupOpacity: typeof parsed.popupOpacity === 'number' ? parsed.popupOpacity : 100,
+      clockOpacity: typeof parsed.clockOpacity === 'number' ? parsed.clockOpacity : 100,
       phases: Array.isArray(parsed.phases) && parsed.phases.length > 0
         ? ensurePhasesHaveAlerts(parsed.phases)
         : buildDefaultPhases(),
@@ -332,9 +336,13 @@ function $(id) { return document.getElementById(id); }
 function snapshot() {
   const p = PHASES[currentIndex];
   const next = PHASES[currentIndex + 1] || null;
+  // 모달이 열려있으면 modalSettings의 표시-관련 값을 우선 사용 (실시간 미리보기)
+  const view = modalSettings || settings;
   return {
-    theme: settings.theme,
-    title: settings.title,
+    theme: view.theme,
+    title: view.title,
+    popupOpacity: view.popupOpacity,
+    clockOpacity: view.clockOpacity,
     stage: p ? p.stage : '',
     detail: p ? p.detail : '',
     kind: p ? p.kind : 'present',
@@ -539,6 +547,15 @@ function renderSettingsUI() {
   renderCustomSounds();
   $('volumeSlider').value = Math.round(modalSettings.volume * 100);
   $('volumeValue').textContent = Math.round(modalSettings.volume * 100) + '%';
+  // 투명도
+  if ($('popupOpacitySlider')) {
+    $('popupOpacitySlider').value = modalSettings.popupOpacity;
+    $('popupOpacityValue').textContent = modalSettings.popupOpacity + '%';
+  }
+  if ($('clockOpacitySlider')) {
+    $('clockOpacitySlider').value = modalSettings.clockOpacity;
+    $('clockOpacityValue').textContent = modalSettings.clockOpacity + '%';
+  }
   // 제목
   $('titleInput').value = modalSettings.title;
   // 데이터 탭 상태
@@ -1073,6 +1090,28 @@ function addAlert() {
   renderAlertRows();
 }
 
+function bulkApplyAlertsToAllPhases() {
+  if (editingPhaseIndex < 0) return;
+  const sourcePhase = modalSettings.phases[editingPhaseIndex];
+  if (!sourcePhase) return;
+  const otherCount = modalSettings.phases.length - 1;
+  if (otherCount < 1) { alert('복사할 다른 단계가 없습니다.'); return; }
+  const alertSummary = sourcePhase.alerts
+    .map((a) => fmtMMSS(a.remainingSec) + ' (' + getPresetLabel(a.soundPreset || '') + ')')
+    .join(', ');
+  if (!confirm(
+    `현재 단계(${editingPhaseIndex + 1}단계)의 알람 ${sourcePhase.alerts.length}개를 나머지 ${otherCount}개 단계에 모두 복사하시겠습니까?\n\n` +
+    `복사될 알람:\n${alertSummary}\n\n` +
+    `다른 단계들의 기존 알람은 모두 덮어써집니다. (단계의 '기본 음성'은 그대로 유지)`
+  )) return;
+  modalSettings.phases.forEach((p, i) => {
+    if (i !== editingPhaseIndex) {
+      p.alerts = JSON.parse(JSON.stringify(sourcePhase.alerts));
+    }
+  });
+  alert(`${otherCount}개 단계에 알람이 복사됐습니다. 모달 '저장' 시 적용됩니다.`);
+}
+
 function resetPhasesDefault() {
   if (confirm('시나리오를 기본 4팀 토론대회 25단계로 되돌리시겠습니까?')) {
     modalSettings.phases = buildDefaultPhases();
@@ -1142,6 +1181,7 @@ function bindButtons() {
     btnAlertEditorClose: closeAlertEditor,
     btnAlertEditorDone: closeAlertEditor,
     btnAddAlert: addAlert,
+    btnAlertBulkApply: bulkApplyAlertsToAllPhases,
     btnOpenSettingsFolder: openSettingsFolderAction,
     btnExportSettings: exportSettingsAction,
     btnImportSettings: importSettingsAction,
@@ -1241,6 +1281,29 @@ function bindButtons() {
       const v = parseInt(vol.value, 10) / 100;
       if (modalSettings) modalSettings.volume = v;
       $('volumeValue').textContent = vol.value + '%';
+    });
+  }
+
+  // 팝업 투명도
+  const popupOp = $('popupOpacitySlider');
+  if (popupOp) {
+    popupOp.addEventListener('input', () => {
+      const v = parseInt(popupOp.value, 10);
+      if (modalSettings) modalSettings.popupOpacity = v;
+      $('popupOpacityValue').textContent = v + '%';
+      // 실시간 미리보기: 자식 윈도우로 push
+      pushState();
+    });
+  }
+
+  // 시계 투명도
+  const clockOp = $('clockOpacitySlider');
+  if (clockOp) {
+    clockOp.addEventListener('input', () => {
+      const v = parseInt(clockOp.value, 10);
+      if (modalSettings) modalSettings.clockOpacity = v;
+      $('clockOpacityValue').textContent = v + '%';
+      pushState();
     });
   }
 

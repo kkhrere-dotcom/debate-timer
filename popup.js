@@ -7,6 +7,9 @@ function applyTheme(theme) {
 function render(state) {
   if (!state) return;
   if (state.theme) applyTheme(state.theme);
+  if (typeof state.popupOpacity === 'number') {
+    document.documentElement.style.setProperty('--popup-opacity', String(state.popupOpacity));
+  }
 
   const mins = String(Math.floor(state.remaining / 60)).padStart(2, '0');
   const secs = String(state.remaining % 60).padStart(2, '0');
