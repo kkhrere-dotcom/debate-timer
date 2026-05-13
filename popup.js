@@ -29,10 +29,14 @@ if (window.api) {
 const send = (cmd) => window.api && window.api.sendCommand(cmd);
 
 $('btnStart').addEventListener('click', () => send('toggle'));
+$('btnClose').addEventListener('click', async () => {
+  if (window.api) await window.api.closePopup();
+});
 
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space') { e.preventDefault(); send('toggle'); }
   else if (e.code === 'ArrowRight') send('next');
   else if (e.code === 'ArrowLeft') send('prev');
   else if (e.key === 'r' || e.key === 'R') send('reset');
+  else if (e.key === 'Escape') { if (window.api) window.api.closePopup(); }
 });

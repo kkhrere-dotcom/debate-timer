@@ -192,8 +192,14 @@ function ringBellSynth(offset, preset) {
   }
 }
 
+function getActiveBellPreset() {
+  const p = PHASES[currentIndex];
+  if (p && p.bellPreset) return p.bellPreset;
+  return settings.bellPreset;
+}
+
 function ringBell(offset) {
-  const preset = settings.bellPreset;
+  const preset = getActiveBellPreset();
   if (preset && preset.startsWith('custom:')) {
     const id = preset.slice('custom:'.length);
     setTimeout(() => playCustomSound(id, settings.volume), (offset || 0) * 1000);
@@ -205,8 +211,9 @@ function ringBell(offset) {
 function playWarning() { ringBell(0); }
 function playEnd() {
   ringBell(0);
-  // 빌트인 종소리 중 일부는 두 번 울리는 게 익숙해서 유지
-  if (settings.bellPreset === 'classic' || settings.bellPreset === 'chime' || settings.bellPreset === 'buzz') {
+  // 빌트인 단순 종은 두 번 울리는 게 익숙해서 유지 (커스텀 음성/gong은 1번만)
+  const active = getActiveBellPreset();
+  if (active === 'classic' || active === 'chime' || active === 'buzz') {
     ringBell(0.7);
   }
 }
@@ -474,11 +481,15 @@ function renderPresetList() {
 function saveCurrentAsPreset() {
   const name = prompt('프리셋 이름을 입력하세요:', '내 시나리오 ' + (modalSettings.scenarioPresets.length + 1));
   if (!name) return;
-  modalSettings.scenarioPresets.push({
+  const preset = {
     id: genId(),
     name: name.trim(),
     phases: JSON.parse(JSON.stringify(modalSettings.phases)),
-  });
+  };
+  modalSettings.scenarioPresets.push(preset);
+  // 프리셋 목록은 즉시 영속화 (모달 "저장" 안 눌러도 유지되도록)
+  settings.scenarioPresets = JSON.parse(JSON.stringify(modalSettings.scenarioPresets));
+  saveSettings(settings);
   renderPresetList();
 }
 
@@ -495,6 +506,9 @@ function deletePreset(id) {
   if (!p) return;
   if (!confirm(`"${p.name}" 프리셋을 삭제하시겠습니까?`)) return;
   modalSettings.scenarioPresets = modalSettings.scenarioPresets.filter((x) => x.id !== id);
+  // 즉시 영속화
+  settings.scenarioPresets = JSON.parse(JSON.stringify(modalSettings.scenarioPresets));
+  saveSettings(settings);
   renderPresetList();
 }
 
@@ -529,8 +543,11 @@ function renderCustomSounds() {
       if (!confirm(`"${sound.name}" 종소리를 삭제하시겠습니까?`)) return;
       modalSettings.customSounds = modalSettings.customSounds.filter((s) => s.id !== sound.id);
       if (modalSettings.bellPreset === id) modalSettings.bellPreset = 'classic';
+      // 이 사운드를 가리키던 단계들의 bellPreset도 비움
+      modalSettings.phases.forEach((p) => { if (p.bellPreset === id) p.bellPreset = null; });
       renderCustomSounds();
       updateSoundSelection();
+      renderPhaseRows();
     });
     grid.appendChild(opt);
   });
@@ -587,6 +604,24 @@ async function addSoundFiles(files) {
     }
   }
   renderCustomSounds();
+  // 시나리오 행의 음성 드롭다운도 갱신
+  renderPhaseRows();
+}
+
+function buildBellOptions(currentValue) {
+  const opts = [
+    { val: '',        label: '⚙ 기본값' },
+    { val: 'classic', label: '🔔 종 (기본)' },
+    { val: 'chime',   label: '🎐 차임' },
+    { val: 'buzz',    label: '🔊 부저' },
+    { val: 'gong',    label: '🥢 종(저음)' },
+  ];
+  modalSettings.customSounds.forEach((s) => {
+    opts.push({ val: 'custom:' + s.id, label: '🎵 ' + s.name });
+  });
+  return opts
+    .map((o) => `<option value="${o.val}" ${o.val === (currentValue || '') ? 'selected' : ''}>${escapeHtml(o.label)}</option>`)
+    .join('');
 }
 
 function renderPhaseRows() {
@@ -607,6 +642,7 @@ function renderPhaseRows() {
         <option value="qa" ${ph.kind === 'qa' ? 'selected' : ''}>질의응답 (초록)</option>
         <option value="closing" ${ph.kind === 'closing' ? 'selected' : ''}>마무리 (빨강)</option>
       </select>
+      <select data-field="bellPreset" title="이 단계에서 사용할 종소리/음성">${buildBellOptions(ph.bellPreset)}</select>
       <button class="phase-del" data-action="delete">✕</button>
     `;
     row.querySelectorAll('input, select').forEach((el) => {
@@ -624,6 +660,8 @@ function renderPhaseRows() {
           ph[field] = el.value;
         } else if (field === 'kind') {
           ph.kind = el.value;
+        } else if (field === 'bellPreset') {
+          ph.bellPreset = el.value || null;
         }
       });
     });
