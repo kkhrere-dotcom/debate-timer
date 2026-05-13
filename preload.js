@@ -14,6 +14,15 @@ contextBridge.exposeInMainWorld('api', {
   closePopup: () => ipcRenderer.invoke('popup:close'),
   isPopupOpen: () => ipcRenderer.invoke('popup:is-open'),
 
+  // 설정 파일 I/O
+  loadSettingsFile: () => ipcRenderer.invoke('settings:load'),
+  saveSettingsFile: (json) => ipcRenderer.invoke('settings:save', json),
+  getSettingsPath: () => ipcRenderer.invoke('settings:path'),
+  getSettingsMeta: () => ipcRenderer.invoke('settings:meta'),
+  exportSettings: (json) => ipcRenderer.invoke('settings:export', json),
+  importSettings: () => ipcRenderer.invoke('settings:import'),
+  openSettingsFolder: () => ipcRenderer.invoke('settings:open-folder'),
+
   // 시계/팝업 → 메인
   requestState: () => ipcRenderer.send('child:request-state'),
   sendCommand: (cmd) => ipcRenderer.send('child:command', cmd),
