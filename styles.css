@@ -98,7 +98,11 @@
   --shadow-hover: 0 4px 12px rgba(0,0,0,0.6);
 }
 
-html, body {
+html {
+  height: 100%;
+  background: transparent; /* OS/윈도우가 보이도록 */
+}
+body {
   height: 100%;
   font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;
   background: var(--bg);
@@ -108,7 +112,7 @@ html, body {
   transition: background 0.2s, color 0.2s;
 }
 
-/* 시계/팝업 윈도우 투명도. body에 .with-clock-opacity / .popup 클래스가 붙음 */
+/* 시계 윈도우: body 배경에 투명도 적용 (글자/UI는 그대로) */
 body.with-clock-opacity {
   background: color-mix(in srgb, var(--bg) calc(var(--clock-opacity, 100) * 1%), transparent);
 }
