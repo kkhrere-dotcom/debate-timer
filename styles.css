@@ -96,6 +96,12 @@ body.clock {
   position: relative;
   padding: 24px 32px;
 }
+/* 시계 창에서는 단계 카운트를 좌측 상단으로 (우상단은 닫기 버튼 영역) */
+body.clock .count {
+  top: 16px;
+  left: 24px;
+  right: auto;
+}
 body.with-clock-opacity {
   background: color-mix(in srgb, var(--bg) calc(var(--clock-opacity, 100) * 1%), transparent);
 }

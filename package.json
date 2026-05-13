@@ -16,7 +16,7 @@
     "electron-builder": "^25.0.0"
   },
   "build": {
-    "appId": "com.changwan.debatetimer",
+    "appId": "com.debate-timer.app",
     "productName": "과학토론타이머",
     "directories": {
       "output": "dist"
