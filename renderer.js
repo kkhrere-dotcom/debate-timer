@@ -1,14 +1,23 @@
 // ============ 기본 시나리오 빌더 ============
 const TEAM_COUNT = 4;
+
+// 모든 단계에 적용되는 기본 알람: 30초 경고 + 0초 종료
+function defaultAlerts() {
+  return [
+    { remainingSec: 30, soundPreset: null },
+    { remainingSec: 0,  soundPreset: null },
+  ];
+}
+
 function buildDefaultPhases() {
   const phases = [];
   for (let team = 1; team <= TEAM_COUNT; team++) {
-    phases.push({ stage: '자기주장 발표', detail: team + '팀 발표', sec: 5 * 60, kind: 'present' });
+    phases.push({ stage: '자기주장 발표', detail: team + '팀 발표', sec: 5 * 60, kind: 'present', bellPreset: null, alerts: defaultAlerts() });
     if (team < TEAM_COUNT) {
-      phases.push({ stage: '준비 시간', detail: (team + 1) + '팀 발표 준비', sec: 3 * 60, kind: 'prep' });
+      phases.push({ stage: '준비 시간', detail: (team + 1) + '팀 발표 준비', sec: 3 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
     }
   }
-  phases.push({ stage: '전체 준비 시간', detail: '질의응답 준비 (전체)', sec: 11 * 60, kind: 'prep' });
+  phases.push({ stage: '전체 준비 시간', detail: '질의응답 준비 (전체)', sec: 11 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
   for (let answering = 1; answering <= TEAM_COUNT; answering++) {
     for (let i = 1; i <= TEAM_COUNT - 1; i++) {
       const asking = ((answering - 1 + i) % TEAM_COUNT) + 1;
@@ -17,14 +26,25 @@ function buildDefaultPhases() {
         detail: answering + '팀 답변 ← ' + asking + '팀 질의',
         sec: 5 * 60,
         kind: 'qa',
+        bellPreset: null,
+        alerts: defaultAlerts(),
       });
     }
   }
-  phases.push({ stage: '주장다지기 준비', detail: '주장다지기 준비 (전체)', sec: 10 * 60, kind: 'prep' });
+  phases.push({ stage: '주장다지기 준비', detail: '주장다지기 준비 (전체)', sec: 10 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
   for (let team = TEAM_COUNT; team >= 1; team--) {
-    phases.push({ stage: '주장다지기', detail: team + '팀 주장다지기', sec: 3 * 60, kind: 'closing' });
+    phases.push({ stage: '주장다지기', detail: team + '팀 주장다지기', sec: 3 * 60, kind: 'closing', bellPreset: null, alerts: defaultAlerts() });
   }
   return phases;
+}
+
+// 기존 데이터에 alerts 필드가 없으면 기본값 주입 (마이그레이션)
+function ensurePhasesHaveAlerts(phases) {
+  return phases.map((p) => ({
+    ...p,
+    alerts: (Array.isArray(p.alerts) && p.alerts.length >= 0) ? p.alerts : defaultAlerts(),
+    bellPreset: p.bellPreset === undefined ? null : p.bellPreset,
+  }));
 }
 
 // ============ 설정 ============
@@ -50,9 +70,10 @@ function loadSettings() {
       bellPreset: parsed.bellPreset || DEFAULT_SETTINGS.bellPreset,
       volume: typeof parsed.volume === 'number' ? parsed.volume : DEFAULT_SETTINGS.volume,
       phases: Array.isArray(parsed.phases) && parsed.phases.length > 0
-        ? parsed.phases
+        ? ensurePhasesHaveAlerts(parsed.phases)
         : buildDefaultPhases(),
-      scenarioPresets: Array.isArray(parsed.scenarioPresets) ? parsed.scenarioPresets : [],
+      scenarioPresets: (Array.isArray(parsed.scenarioPresets) ? parsed.scenarioPresets : [])
+        .map((p) => ({ ...p, phases: ensurePhasesHaveAlerts(p.phases || []) })),
       customSounds: Array.isArray(parsed.customSounds) ? parsed.customSounds : [],
     };
   } catch (e) {
@@ -92,7 +113,6 @@ let currentIndex = 0;
 let remaining = PHASES[0] ? PHASES[0].sec : 300;
 let running = false;
 let timerId = null;
-let warned = false;
 let audioCtx = null;
 
 function ensureAudio() {
@@ -192,14 +212,15 @@ function ringBellSynth(offset, preset) {
   }
 }
 
-function getActiveBellPreset() {
+function resolveBellPreset(alertPreset) {
+  // alertPreset > phase.bellPreset > settings.bellPreset
+  if (alertPreset) return alertPreset;
   const p = PHASES[currentIndex];
   if (p && p.bellPreset) return p.bellPreset;
   return settings.bellPreset;
 }
 
-function ringBell(offset) {
-  const preset = getActiveBellPreset();
+function ringBellWithPreset(preset, offset) {
   if (preset && preset.startsWith('custom:')) {
     const id = preset.slice('custom:'.length);
     setTimeout(() => playCustomSound(id, settings.volume), (offset || 0) * 1000);
@@ -208,14 +229,9 @@ function ringBell(offset) {
   }
 }
 
-function playWarning() { ringBell(0); }
-function playEnd() {
-  ringBell(0);
-  // 빌트인 단순 종은 두 번 울리는 게 익숙해서 유지 (커스텀 음성/gong은 1번만)
-  const active = getActiveBellPreset();
-  if (active === 'classic' || active === 'chime' || active === 'buzz') {
-    ringBell(0.7);
-  }
+function playAlert(alertPreset) {
+  const preset = resolveBellPreset(alertPreset);
+  ringBellWithPreset(preset, 0);
 }
 
 function previewSound(preset) {
@@ -303,10 +319,17 @@ function tick() {
   if (!running) return;
   if (remaining > 0) {
     remaining -= 1;
-    if (remaining === 30 && !warned) { warned = true; playWarning(); }
     refresh();
+
+    const p = PHASES[currentIndex];
+    const alerts = (p && Array.isArray(p.alerts) && p.alerts.length > 0)
+      ? p.alerts
+      : defaultAlerts();
+    alerts.forEach((a) => {
+      if (a.remainingSec === remaining) playAlert(a.soundPreset);
+    });
+
     if (remaining === 0) {
-      playEnd();
       running = false;
       refresh();
       setTimeout(() => { if (currentIndex + 1 < PHASES.length) nextPhase(); }, 2500);
@@ -327,7 +350,6 @@ function toggleRun() {
 
 function resetPhaseState() {
   remaining = PHASES[currentIndex] ? PHASES[currentIndex].sec : 0;
-  warned = false;
 }
 
 function nextPhase() {
@@ -372,14 +394,12 @@ function resetAll() {
 function adjustTime(delta) {
   const maxSec = PHASES[currentIndex] ? PHASES[currentIndex].sec : 0;
   remaining = Math.max(0, Math.min(maxSec, remaining + delta));
-  if (remaining > 30) warned = false;
   refresh();
 }
 
 function jumpTo(sec) {
   const maxSec = PHASES[currentIndex] ? PHASES[currentIndex].sec : 0;
   remaining = Math.max(0, Math.min(maxSec, sec));
-  if (remaining > 30) warned = false;
   refresh();
 }
 
@@ -671,6 +691,8 @@ function renderPhaseRows() {
   const container = $('phaseRows');
   container.innerHTML = '';
   modalSettings.phases.forEach((ph, i) => {
+    if (!Array.isArray(ph.alerts)) ph.alerts = defaultAlerts();
+    const alertCount = ph.alerts.length;
     const row = document.createElement('div');
     row.className = 'phase-row';
     row.innerHTML = `
@@ -685,7 +707,8 @@ function renderPhaseRows() {
         <option value="qa" ${ph.kind === 'qa' ? 'selected' : ''}>질의응답 (초록)</option>
         <option value="closing" ${ph.kind === 'closing' ? 'selected' : ''}>마무리 (빨강)</option>
       </select>
-      <select data-field="bellPreset" title="이 단계에서 사용할 종소리/음성">${buildBellOptions(ph.bellPreset)}</select>
+      <select data-field="bellPreset" title="이 단계의 기본 종소리/음성">${buildBellOptions(ph.bellPreset)}</select>
+      <button class="phase-alert-btn" data-action="edit-alerts" title="알람 시점 편집">🔔<span class="alert-badge">${alertCount}</span></button>
       <button class="phase-del" data-action="delete">✕</button>
     `;
     row.querySelectorAll('input, select').forEach((el) => {
@@ -708,6 +731,7 @@ function renderPhaseRows() {
         }
       });
     });
+    row.querySelector('[data-action="edit-alerts"]').addEventListener('click', () => openAlertEditor(i));
     row.querySelector('[data-action="delete"]').addEventListener('click', () => {
       if (modalSettings.phases.length <= 1) {
         alert('최소 한 개의 단계는 필요합니다.');
@@ -732,8 +756,94 @@ function addPhase() {
     detail: '',
     sec: 60,
     kind: 'present',
+    bellPreset: null,
+    alerts: defaultAlerts(),
   });
   renderPhaseRows();
+}
+
+// ============ 알람 편집 서브모달 ============
+let editingPhaseIndex = -1;
+
+function openAlertEditor(phaseIndex) {
+  editingPhaseIndex = phaseIndex;
+  const ph = modalSettings.phases[phaseIndex];
+  if (!ph) return;
+  if (!Array.isArray(ph.alerts)) ph.alerts = defaultAlerts();
+  $('alertEditorPhaseLabel').textContent = `${phaseIndex + 1}단계: ${ph.stage} · ${ph.detail || ''} (총 ${fmtMMSS(ph.sec)})`;
+  renderAlertRows();
+  $('alertEditorModal').hidden = false;
+}
+
+function closeAlertEditor() {
+  $('alertEditorModal').hidden = true;
+  editingPhaseIndex = -1;
+  renderPhaseRows(); // 알람 개수 배지 갱신
+}
+
+function fmtMMSS(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}
+
+function renderAlertRows() {
+  const ph = modalSettings.phases[editingPhaseIndex];
+  if (!ph) return;
+  // remainingSec 내림차순(가장 많이 남은 시점부터)
+  ph.alerts.sort((a, b) => b.remainingSec - a.remainingSec);
+  const container = $('alertRows');
+  container.innerHTML = '';
+  ph.alerts.forEach((alert, idx) => {
+    const row = document.createElement('div');
+    row.className = 'alert-row';
+    const m = Math.floor(alert.remainingSec / 60);
+    const s = alert.remainingSec % 60;
+    row.innerHTML = `
+      <input data-field="min" type="number" min="0" max="99" value="${m}" />
+      <input data-field="sec" type="number" min="0" max="59" value="${s}" />
+      <select data-field="soundPreset">${buildBellOptions(alert.soundPreset)}</select>
+      <button class="alert-del" data-action="delete">✕</button>
+    `;
+    row.querySelectorAll('input, select').forEach((el) => {
+      el.addEventListener('input', () => {
+        const f = el.dataset.field;
+        if (f === 'min') {
+          const mm = Math.max(0, parseInt(el.value, 10) || 0);
+          alert.remainingSec = mm * 60 + (alert.remainingSec % 60);
+        } else if (f === 'sec') {
+          const ss = Math.max(0, Math.min(59, parseInt(el.value, 10) || 0));
+          const mm = Math.floor(alert.remainingSec / 60);
+          alert.remainingSec = mm * 60 + ss;
+        } else if (f === 'soundPreset') {
+          alert.soundPreset = el.value || null;
+        }
+      });
+    });
+    row.querySelector('[data-action="delete"]').addEventListener('click', () => {
+      ph.alerts.splice(idx, 1);
+      renderAlertRows();
+    });
+    container.appendChild(row);
+  });
+  if (ph.alerts.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:14px;text-align:center;color:var(--fg-faint);font-size:12px;';
+    empty.textContent = '알람이 없습니다. 아래 + 알람 추가 버튼으로 시점을 등록하세요.';
+    container.appendChild(empty);
+  }
+}
+
+function addAlert() {
+  const ph = modalSettings.phases[editingPhaseIndex];
+  if (!ph) return;
+  // 사용 중인 시점을 피해서 적당히 골라줌
+  const usedSecs = new Set(ph.alerts.map((a) => a.remainingSec));
+  let candidate = Math.max(0, Math.floor(ph.sec / 2));
+  while (usedSecs.has(candidate) && candidate > 0) candidate -= 10;
+  if (candidate < 0) candidate = 0;
+  ph.alerts.push({ remainingSec: candidate, soundPreset: null });
+  renderAlertRows();
 }
 
 function resetPhasesDefault() {
@@ -802,6 +912,9 @@ function bindButtons() {
     btnSavePreset: showPresetNameForm,
     btnConfirmSavePreset: confirmSavePreset,
     btnCancelSavePreset: hidePresetNameForm,
+    btnAlertEditorClose: closeAlertEditor,
+    btnAlertEditorDone: closeAlertEditor,
+    btnAddAlert: addAlert,
   };
   for (const [id, fn] of Object.entries(map)) {
     const el = document.getElementById(id);
@@ -922,8 +1035,11 @@ function bindButtons() {
 
 function handleKey(e) {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+  if (!$('alertEditorModal').hidden) {
+    if (e.key === 'Escape') closeAlertEditor();
+    return;
+  }
   if (!$('settingsModal').hidden) {
-    // 모달 열려있으면 ESC만
     if (e.key === 'Escape') { applyTheme(settings.theme); closeSettings(); }
     return;
   }

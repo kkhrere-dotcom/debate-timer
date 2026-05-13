@@ -465,12 +465,84 @@ body.popup button { -webkit-app-region: no-drag; }
 }
 .phase-row {
   display: grid;
-  grid-template-columns: 24px 1fr 1.1fr 46px 46px 78px 110px 24px;
-  gap: 5px;
+  grid-template-columns: 22px 1fr 1fr 40px 40px 72px 96px 56px 22px;
+  gap: 4px;
   align-items: center;
-  padding: 6px 8px;
+  padding: 6px 6px;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
+}
+.phase-row .phase-alert-btn {
+  padding: 5px 6px;
+  font-size: 11px;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.phase-row .phase-alert-btn:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg);
+}
+.phase-row .phase-alert-btn .alert-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--accent-blue);
+  min-width: 14px;
+}
+
+/* ============ 알람 편집 서브모달 ============ */
+#alertEditorModal { z-index: 1100; }
+
+.alerts-table {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.alert-row {
+  display: grid;
+  grid-template-columns: 90px 90px 1fr 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.alert-row:last-child { border-bottom: none; }
+.alert-row.header {
+  background: var(--surface);
+  color: var(--fg-faint);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.alert-row input, .alert-row select {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  width: 100%;
+}
+.alert-row input:focus, .alert-row select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+.alert-row .alert-del {
+  background: var(--accent-red);
+  color: #ffffff;
+  padding: 5px 6px;
+  font-size: 11px;
+  border-radius: 6px;
+  box-shadow: none;
 }
 .phase-row:last-child { border-bottom: none; }
 .phase-row.header {
