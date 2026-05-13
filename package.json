@@ -22,6 +22,7 @@
       "output": "dist"
     },
     "afterPack": "./scripts/afterPack.js",
+    "asar": false,
     "files": [
       "main.js",
       "preload.js",
