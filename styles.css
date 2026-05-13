@@ -627,6 +627,38 @@ body.popup button { -webkit-app-region: no-drag; }
   font-size: 12px;
 }
 
+.bulk-apply-section {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.bulk-apply-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+.bulk-apply-hint {
+  font-size: 11px;
+  color: var(--fg-faint);
+  margin-bottom: 10px;
+}
+.bulk-apply-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.bulk-apply-actions button {
+  flex: 1;
+  background: var(--accent-orange);
+  font-size: 12px;
+  padding: 8px 10px;
+  min-width: 140px;
+}
+#btnBulkApplyAlerts { background: var(--accent-red); }
+
 /* 제목 */
 .title-form { display: flex; flex-direction: column; gap: 10px; }
 .title-form label { font-size: 13px; font-weight: 700; }
@@ -743,6 +775,18 @@ body.popup button { -webkit-app-region: no-drag; }
   padding: 12px;
   border: 1px dashed var(--border);
   border-radius: 8px;
+}
+.preset-sub-header {
+  font-size: 10px;
+  color: var(--fg-faint);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 2px 4px;
+}
+.preset-item.builtin {
+  background: var(--surface);
+  border-style: dashed;
 }
 .preset-item {
   display: flex;

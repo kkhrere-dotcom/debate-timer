@@ -1,5 +1,4 @@
 // ============ 기본 시나리오 빌더 ============
-const TEAM_COUNT = 4;
 
 // 모든 단계에 적용되는 기본 알람: 30초 경고 + 0초 종료
 function defaultAlerts() {
@@ -9,18 +8,19 @@ function defaultAlerts() {
   ];
 }
 
-function buildDefaultPhases() {
+// 팀 수에 따라 표준 토론대회 시나리오 빌드 (자기주장 → 질의응답 → 주장다지기)
+function buildTeamPhases(teamCount) {
   const phases = [];
-  for (let team = 1; team <= TEAM_COUNT; team++) {
+  for (let team = 1; team <= teamCount; team++) {
     phases.push({ stage: '자기주장 발표', detail: team + '팀 발표', sec: 5 * 60, kind: 'present', bellPreset: null, alerts: defaultAlerts() });
-    if (team < TEAM_COUNT) {
+    if (team < teamCount) {
       phases.push({ stage: '준비 시간', detail: (team + 1) + '팀 발표 준비', sec: 3 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
     }
   }
   phases.push({ stage: '전체 준비 시간', detail: '질의응답 준비 (전체)', sec: 11 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
-  for (let answering = 1; answering <= TEAM_COUNT; answering++) {
-    for (let i = 1; i <= TEAM_COUNT - 1; i++) {
-      const asking = ((answering - 1 + i) % TEAM_COUNT) + 1;
+  for (let answering = 1; answering <= teamCount; answering++) {
+    for (let i = 1; i <= teamCount - 1; i++) {
+      const asking = ((answering - 1 + i) % teamCount) + 1;
       phases.push({
         stage: '질의응답',
         detail: answering + '팀 답변 ← ' + asking + '팀 질의',
@@ -32,10 +32,23 @@ function buildDefaultPhases() {
     }
   }
   phases.push({ stage: '주장다지기 준비', detail: '주장다지기 준비 (전체)', sec: 10 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
-  for (let team = TEAM_COUNT; team >= 1; team--) {
+  for (let team = teamCount; team >= 1; team--) {
     phases.push({ stage: '주장다지기', detail: team + '팀 주장다지기', sec: 3 * 60, kind: 'closing', bellPreset: null, alerts: defaultAlerts() });
   }
   return phases;
+}
+
+function buildDefaultPhases() {
+  return buildTeamPhases(4); // 4팀이 기본
+}
+
+// 기본 제공 시나리오 프리셋 (사용자가 삭제 불가)
+function getBuiltinPresets() {
+  return [
+    { id: 'builtin-3', name: '🏛 3팀 토론 (기본)', phases: buildTeamPhases(3), builtin: true },
+    { id: 'builtin-4', name: '🏛 4팀 토론 (기본)', phases: buildTeamPhases(4), builtin: true },
+    { id: 'builtin-5', name: '🏛 5팀 토론 (기본)', phases: buildTeamPhases(5), builtin: true },
+  ];
 }
 
 // 기존 데이터에 alerts 필드가 없으면 기본값 주입 (마이그레이션)
@@ -610,10 +623,36 @@ function updateSoundSelection() {
 function renderPresetList() {
   const list = $('presetList');
   list.innerHTML = '';
+
+  // 기본 프리셋 (3/4/5팀)
+  const builtin = getBuiltinPresets();
+  const builtinHeader = document.createElement('div');
+  builtinHeader.className = 'preset-sub-header';
+  builtinHeader.textContent = '기본 시나리오';
+  list.appendChild(builtinHeader);
+  builtin.forEach((p) => {
+    const item = document.createElement('div');
+    item.className = 'preset-item builtin';
+    item.innerHTML = `
+      <div class="preset-item-name">${escapeHtml(p.name)}</div>
+      <div class="preset-item-meta">${p.phases.length}단계</div>
+      <button class="btn-load" data-action="load-builtin">불러오기</button>
+      <span style="width:24px;display:inline-block;"></span>
+    `;
+    item.querySelector('[data-action="load-builtin"]').addEventListener('click', () => loadBuiltinPreset(p));
+    list.appendChild(item);
+  });
+
+  // 사용자 프리셋
+  const userHeader = document.createElement('div');
+  userHeader.className = 'preset-sub-header';
+  userHeader.textContent = '내가 저장한 프리셋';
+  list.appendChild(userHeader);
+
   if (!modalSettings.scenarioPresets.length) {
     const empty = document.createElement('div');
     empty.className = 'preset-empty';
-    empty.textContent = '아직 저장된 프리셋이 없습니다. 아래에서 시나리오를 편집한 뒤 저장하세요.';
+    empty.textContent = '아래에서 시나리오를 편집한 뒤 저장하면 여기에 추가됩니다.';
     list.appendChild(empty);
     return;
   }
@@ -630,6 +669,59 @@ function renderPresetList() {
     item.querySelector('[data-action="delete"]').addEventListener('click', () => deletePreset(p.id));
     list.appendChild(item);
   });
+}
+
+function loadBuiltinPreset(preset) {
+  if (!confirm(`"${preset.name}" 시나리오를 불러옵니다. 현재 편집 중인 시나리오 내용은 사라집니다. 계속할까요?`)) return;
+  modalSettings.phases = JSON.parse(JSON.stringify(preset.phases));
+  renderPhaseRows();
+}
+
+function getPresetLabel(preset) {
+  const map = {
+    'classic': '🔔 종 (기본)',
+    'classic-double': '🔔🔔 종 두 번',
+    'chime': '🎐 차임',
+    'chime-double': '🎐🎐 차임 두 번',
+    'buzz': '🔊 부저',
+    'gong': '🥢 종(저음)',
+  };
+  if (map[preset]) return map[preset];
+  if (preset && preset.startsWith('custom:')) {
+    const id = preset.slice('custom:'.length);
+    const s = modalSettings.customSounds.find((x) => x.id === id);
+    return s ? '🎵 ' + s.name : '(삭제된 사운드)';
+  }
+  return preset || '(없음)';
+}
+
+function bulkApplyBellToDefault() {
+  const preset = modalSettings.bellPreset;
+  if (!preset) { alert('적용할 종소리를 먼저 선택하세요.'); return; }
+  const label = getPresetLabel(preset);
+  if (!confirm(`현재 선택된 종소리 "${label}" 를 시나리오의 모든 단계(${modalSettings.phases.length}개)의 '기본 음성'으로 일괄 적용하시겠습니까?\n\n각 단계의 알람에서 '기본값'을 사용하는 경우 이 음성이 재생됩니다. 특정 알람에서 명시적으로 다른 사운드를 골랐다면 그건 유지됩니다.`)) return;
+  modalSettings.phases.forEach((p) => { p.bellPreset = preset; });
+  renderPhaseRows();
+  alert(`${modalSettings.phases.length}개 단계의 기본 음성이 ${label}(으)로 변경됐습니다. 모달 '저장' 시 적용.`);
+}
+
+function bulkApplyBellToAllAlerts() {
+  const preset = modalSettings.bellPreset;
+  if (!preset) { alert('적용할 종소리를 먼저 선택하세요.'); return; }
+  const label = getPresetLabel(preset);
+  let totalAlerts = 0;
+  modalSettings.phases.forEach((p) => {
+    if (Array.isArray(p.alerts)) totalAlerts += p.alerts.length;
+  });
+  if (!confirm(`⚠️ 모든 단계의 모든 알람(총 ${totalAlerts}개)을 "${label}" 로 강제 변경하시겠습니까?\n\n각 알람에 개별 설정한 사운드는 모두 덮어써집니다. 되돌릴 수 없습니다.`)) return;
+  modalSettings.phases.forEach((p) => {
+    p.bellPreset = preset;
+    if (Array.isArray(p.alerts)) {
+      p.alerts.forEach((a) => { a.soundPreset = preset; });
+    }
+  });
+  renderPhaseRows();
+  alert(`${modalSettings.phases.length}개 단계, ${totalAlerts}개 알람이 ${label}(으)로 변경됐습니다. 모달 '저장' 시 적용.`);
 }
 
 function showPresetNameForm() {
@@ -1053,6 +1145,8 @@ function bindButtons() {
     btnOpenSettingsFolder: openSettingsFolderAction,
     btnExportSettings: exportSettingsAction,
     btnImportSettings: importSettingsAction,
+    btnBulkApplyDefault: bulkApplyBellToDefault,
+    btnBulkApplyAlerts: bulkApplyBellToAllAlerts,
   };
   for (const [id, fn] of Object.entries(map)) {
     const el = document.getElementById(id);
