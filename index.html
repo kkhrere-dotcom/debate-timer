@@ -61,6 +61,34 @@
     <div class="help">Space=시작/정지 · ←→=이전/다음 · R=초기화</div>
   </div>
 
+  <!-- 알람 편집 서브모달 -->
+  <div class="modal-backdrop" id="alertEditorModal" hidden>
+    <div class="modal" style="max-width:620px;">
+      <div class="modal-header">
+        <h2>🔔 알람 — <span id="alertEditorPhaseLabel"></span></h2>
+        <button class="modal-close" id="btnAlertEditorClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:11px; color:var(--fg-faint); margin-bottom:10px;">
+          각 시점마다 어떤 음성/종소리를 재생할지 설정합니다. '기본 음성'을 선택하면 시나리오 행의 '기본 음성' 또는 전역 종소리를 사용합니다.
+        </div>
+        <div class="alerts-table">
+          <div class="alert-row header">
+            <span>남은 시간 (분)</span>
+            <span>(초)</span>
+            <span>음성/종소리</span>
+            <span></span>
+          </div>
+          <div id="alertRows"></div>
+        </div>
+        <button id="btnAddAlert" style="background:var(--accent-blue);padding:8px 14px;font-size:12px;margin-top:8px;">+ 알람 추가</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-save" id="btnAlertEditorDone">완료</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 설정 모달 -->
   <div class="modal-backdrop" id="settingsModal" hidden>
     <div class="modal">
@@ -148,7 +176,8 @@
               <span>분</span>
               <span>초</span>
               <span>종류</span>
-              <span>음성</span>
+              <span>기본 음성</span>
+              <span>알람</span>
               <span></span>
             </div>
             <div id="phaseRows"></div>
