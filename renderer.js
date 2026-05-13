@@ -434,6 +434,7 @@ function renderSettingsUI() {
     c.classList.toggle('selected', c.dataset.theme === modalSettings.theme);
   });
   // 시나리오 프리셋
+  hidePresetNameForm();
   renderPresetList();
   // 시나리오 단계
   renderPhaseRows();
@@ -478,19 +479,47 @@ function renderPresetList() {
   });
 }
 
-function saveCurrentAsPreset() {
-  const name = prompt('프리셋 이름을 입력하세요:', '내 시나리오 ' + (modalSettings.scenarioPresets.length + 1));
-  if (!name) return;
+function showPresetNameForm() {
+  const form = $('presetNameForm');
+  const input = $('presetNameInput');
+  const btn = $('btnSavePreset');
+  if (!form || !input) return;
+  btn.hidden = true;
+  form.hidden = false;
+  input.value = '내 시나리오 ' + (modalSettings.scenarioPresets.length + 1);
+  setTimeout(() => { input.focus(); input.select(); }, 30);
+}
+
+function hidePresetNameForm() {
+  const form = $('presetNameForm');
+  const btn = $('btnSavePreset');
+  if (form) form.hidden = true;
+  if (btn) btn.hidden = false;
+}
+
+function confirmSavePreset() {
+  const input = $('presetNameInput');
+  const name = (input.value || '').trim();
+  if (!name) {
+    alert('프리셋 이름을 입력해주세요.');
+    input.focus();
+    return;
+  }
   const preset = {
     id: genId(),
-    name: name.trim(),
+    name,
     phases: JSON.parse(JSON.stringify(modalSettings.phases)),
   };
   modalSettings.scenarioPresets.push(preset);
-  // 프리셋 목록은 즉시 영속화 (모달 "저장" 안 눌러도 유지되도록)
   settings.scenarioPresets = JSON.parse(JSON.stringify(modalSettings.scenarioPresets));
-  saveSettings(settings);
+  if (!saveSettings(settings)) {
+    // 저장 실패 → 롤백
+    modalSettings.scenarioPresets.pop();
+    settings.scenarioPresets = JSON.parse(JSON.stringify(modalSettings.scenarioPresets));
+    return;
+  }
   renderPresetList();
+  hidePresetNameForm();
 }
 
 function loadPreset(id) {
@@ -545,6 +574,9 @@ function renderCustomSounds() {
       if (modalSettings.bellPreset === id) modalSettings.bellPreset = 'classic';
       // 이 사운드를 가리키던 단계들의 bellPreset도 비움
       modalSettings.phases.forEach((p) => { if (p.bellPreset === id) p.bellPreset = null; });
+      // 즉시 영속화
+      settings.customSounds = JSON.parse(JSON.stringify(modalSettings.customSounds));
+      saveSettings(settings);
       renderCustomSounds();
       updateSoundSelection();
       renderPhaseRows();
@@ -580,6 +612,8 @@ function readFileAsDataURL(file) {
 }
 
 async function addSoundFiles(files) {
+  const before = JSON.parse(JSON.stringify(modalSettings.customSounds));
+  let added = 0;
   for (const file of files) {
     if (!file.type.startsWith('audio/')) {
       alert(`"${file.name}"은 오디오 파일이 아닙니다. 건너뜁니다.`);
@@ -594,17 +628,26 @@ async function addSoundFiles(files) {
       const id = genId();
       modalSettings.customSounds.push({
         id,
-        name: file.name.replace(/\.[^.]+$/, ''), // 확장자 제거
+        name: file.name.replace(/\.[^.]+$/, ''),
         size: file.size,
         type: file.type,
         dataUrl,
       });
+      added++;
     } catch (e) {
       alert(`"${file.name}" 읽기 실패: ${e.message}`);
     }
   }
+  if (added > 0) {
+    // 즉시 영속화 (모달 "저장" 안 눌러도 유지)
+    settings.customSounds = JSON.parse(JSON.stringify(modalSettings.customSounds));
+    if (!saveSettings(settings)) {
+      // 저장 실패 (보통 용량 초과) → 추가한 분량 롤백
+      modalSettings.customSounds = before;
+      settings.customSounds = JSON.parse(JSON.stringify(before));
+    }
+  }
   renderCustomSounds();
-  // 시나리오 행의 음성 드롭다운도 갱신
   renderPhaseRows();
 }
 
@@ -756,7 +799,9 @@ function bindButtons() {
     btnSettingsSave: applySettingsAndSave,
     btnAddPhase: addPhase,
     btnResetPhases: resetPhasesDefault,
-    btnSavePreset: saveCurrentAsPreset,
+    btnSavePreset: showPresetNameForm,
+    btnConfirmSavePreset: confirmSavePreset,
+    btnCancelSavePreset: hidePresetNameForm,
   };
   for (const [id, fn] of Object.entries(map)) {
     const el = document.getElementById(id);
@@ -798,6 +843,16 @@ function bindButtons() {
       if (!dropZone || !dropZone.contains(e.target)) e.preventDefault();
     });
   });
+
+  // 프리셋 이름 입력에서 Enter/Escape
+  const presetInput = $('presetNameInput');
+  if (presetInput) {
+    presetInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); confirmSavePreset(); }
+      else if (e.key === 'Escape') { e.preventDefault(); hidePresetNameForm(); }
+      e.stopPropagation();
+    });
+  }
 
   // 탭
   document.querySelectorAll('.modal-tabs .tab').forEach((t) => {
