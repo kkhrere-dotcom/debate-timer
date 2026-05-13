@@ -95,6 +95,13 @@ body {
 body.clock {
   position: relative;
   padding: 24px 32px;
+  -webkit-app-region: drag;
+}
+/* 버튼·인터랙티브 요소는 드래그 제외 */
+body.clock button,
+body.clock .clock-close-x,
+body.clock .fs-hint {
+  -webkit-app-region: no-drag;
 }
 /* 시계 창에서는 단계 카운트를 좌측 상단으로 (우상단은 닫기 버튼 영역) */
 body.clock .count {
@@ -105,17 +112,7 @@ body.clock .count {
 body.with-clock-opacity {
   background: color-mix(in srgb, var(--bg) calc(var(--clock-opacity, 100) * 1%), transparent);
 }
-/* 시계 상단 드래그 영역 (40px 보이지 않는 핸들) */
-.clock-drag-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 56px; /* 닫기 버튼 영역 비움 */
-  height: 36px;
-  -webkit-app-region: drag;
-  z-index: 5;
-}
-/* 시계 닫기 버튼 */
+/* 시계 닫기 버튼 (전체화면 중에도 표시. 클릭 시 전체화면 해제 또는 창 닫기) */
 .clock-close-x {
   position: absolute;
   top: 8px;
@@ -160,9 +157,14 @@ body.with-clock-opacity {
 body.is-fullscreen .fs-hint {
   opacity: 1;
 }
-body.is-fullscreen .clock-drag-bar,
+/* 전체화면 중엔 ✕ 버튼이 '전체화면 해제' 역할. 시각적으로 좀 더 잘 보이게 */
 body.is-fullscreen .clock-close-x {
-  display: none;
+  background: rgba(0,0,0,0.5);
+  color: rgba(255,255,255,0.9);
+  border-color: rgba(255,255,255,0.3);
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
 }
 body {
   display: flex;

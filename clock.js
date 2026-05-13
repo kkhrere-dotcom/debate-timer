@@ -41,17 +41,25 @@ function render(state) {
   }
 }
 
+function setFsClass(isFs) {
+  document.body.classList.toggle('is-fullscreen', isFs);
+  $('btnClose').title = isFs ? '전체화면 해제 (Esc 또는 Enter)' : '닫기 (Esc)';
+}
+
 if (window.api) {
   window.api.onStateUpdate(render);
   window.api.requestState();
-  // 전체화면 상태 추적
-  window.api.onClockFullscreenChanged((isFs) => {
-    document.body.classList.toggle('is-fullscreen', isFs);
-  });
+  window.api.onClockFullscreenChanged((isFs) => setFsClass(isFs));
 }
 
+// ✕ 버튼: 전체화면 중엔 전체화면 해제, 평소엔 창 닫기
 $('btnClose').addEventListener('click', async () => {
-  if (window.api) await window.api.closeClock();
+  if (!window.api) return;
+  if (document.body.classList.contains('is-fullscreen')) {
+    await window.api.fullscreenClock();
+  } else {
+    await window.api.closeClock();
+  }
 });
 
 document.addEventListener('keydown', (e) => {

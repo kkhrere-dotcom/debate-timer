@@ -94,18 +94,6 @@ function createClockWindow() {
   });
   clockWindow.loadFile('clock.html');
 
-  // 전체화면 상태를 시계 렌더러에 알림
-  clockWindow.on('enter-full-screen', () => {
-    if (clockWindow && !clockWindow.isDestroyed()) {
-      clockWindow.webContents.send('clock-fullscreen-changed', true);
-    }
-  });
-  clockWindow.on('leave-full-screen', () => {
-    if (clockWindow && !clockWindow.isDestroyed()) {
-      clockWindow.webContents.send('clock-fullscreen-changed', false);
-    }
-  });
-
   clockWindow.on('closed', () => {
     clockWindow = null;
     if (consoleWindow && !consoleWindow.isDestroyed()) {
@@ -201,11 +189,7 @@ function buildMenu() {
         {
           label: '시계 창 전체화면 토글',
           accelerator: 'F11',
-          click: () => {
-            if (clockWindow && !clockWindow.isDestroyed()) {
-              clockWindow.setFullScreen(!clockWindow.isFullScreen());
-            }
-          },
+          click: () => toggleClockFullscreenInternal(),
         },
         {
           label: '팝업 모드 토글',
@@ -270,13 +254,17 @@ ipcMain.handle('clock:close', () => {
   if (clockWindow && !clockWindow.isDestroyed()) clockWindow.close();
 });
 ipcMain.handle('clock:is-open', () => !!(clockWindow && !clockWindow.isDestroyed()));
-ipcMain.handle('clock:fullscreen', () => {
-  if (clockWindow && !clockWindow.isDestroyed()) {
-    clockWindow.setFullScreen(!clockWindow.isFullScreen());
-    return clockWindow.isFullScreen();
-  }
-  return false;
-});
+function toggleClockFullscreenInternal() {
+  if (!clockWindow || clockWindow.isDestroyed()) return false;
+  // setSimpleFullScreen은 native fullscreen보다 안정적 (애니메이션·새 Space 안 만듦)
+  const isFs = clockWindow.isSimpleFullScreen();
+  const newState = !isFs;
+  clockWindow.setSimpleFullScreen(newState);
+  clockWindow.webContents.send('clock-fullscreen-changed', newState);
+  return newState;
+}
+
+ipcMain.handle('clock:fullscreen', () => toggleClockFullscreenInternal());
 
 // 팝업 창 제어
 ipcMain.handle('popup:open', () => createPopupWindow());
