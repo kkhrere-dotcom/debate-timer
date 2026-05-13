@@ -381,6 +381,13 @@ function tick() {
     });
 
     if (remaining === 0) {
+      // 시나리오의 마지막 단계 종료 시 종을 한 번 더 (대회 종료 효과)
+      const isLastPhase = currentIndex === PHASES.length - 1;
+      if (isLastPhase) {
+        const zeroAlert = alerts.find((a) => a.remainingSec === 0);
+        const secondPreset = zeroAlert ? zeroAlert.soundPreset : null;
+        setTimeout(() => playAlert(secondPreset), 700);
+      }
       running = false;
       refresh();
       setTimeout(() => { if (currentIndex + 1 < PHASES.length) nextPhase(); }, 2500);
