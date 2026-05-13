@@ -647,6 +647,42 @@ body.popup button { -webkit-app-region: no-drag; }
   background: var(--accent-red);
 }
 
+.preset-name-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--accent-blue);
+  border-radius: 8px;
+  background: var(--surface);
+  align-items: center;
+}
+.preset-name-form input {
+  flex: 1;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.preset-name-form input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+.preset-name-form button {
+  padding: 7px 14px;
+  font-size: 12px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.btn-save-preset-confirm { background: var(--accent-blue); }
+.btn-save-preset-cancel {
+  background: var(--fg-very-faint);
+  color: var(--fg);
+}
+
 /* ============ 드래그앤드롭 영역 ============ */
 .drop-zone {
   display: flex;
