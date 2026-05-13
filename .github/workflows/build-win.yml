@@ -18,6 +18,8 @@ jobs:
   build-windows:
     runs-on: windows-latest
     timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,6 +52,38 @@ jobs:
           path: dist/*.exe
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create or update Release (latest)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: 최신 빌드 (Windows)
+          body: |
+            ## 과학토론타이머 — 최신 Windows 빌드
+
+            이 릴리스는 `main` 브랜치에 푸시될 때마다 자동으로 갱신됩니다.
+
+            ### 설치 방법
+            1. 아래 **Assets**에서 `과학토론타이머 Setup 1.0.0.exe` 다운로드
+            2. 더블클릭으로 실행
+            3. Windows SmartScreen 경고 시 "추가 정보" → "실행"
+            4. 설치 완료 후 바탕화면 아이콘 더블클릭
+
+            ### 단축키
+            - Space: 시작/정지
+            - ← / →: 이전/다음 단계
+            - R: 현재 단계 초기화
+            - F11 (메뉴): 시계 창 전체화면
+            - Ctrl+P (메뉴): 팝업 모드 토글
+
+            ### 자세한 사용법
+            [README](https://github.com/kkhrere-dotcom/debate-timer#readme) 참고
+          files: |
+            dist/*.exe
+          fail_on_unmatched_files: true
+          make_latest: true
+          prerelease: false
 
       - name: Upload unpacked (debug)
         if: failure()
