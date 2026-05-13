@@ -12,7 +12,10 @@ function render(state) {
   if (!state) return;
   if (state.theme) applyTheme(state.theme);
   if (state.title) applyTitle(state.title);
-  // 시계 창 투명도는 드래그 호환성 문제로 비활성화 (현재 불투명 고정)
+  if (typeof state.clockOpacity === 'number') {
+    document.documentElement.style.setProperty('--clock-opacity', String(state.clockOpacity));
+    document.body.classList.toggle('with-clock-opacity', state.clockOpacity < 100);
+  }
 
   const stageEl = $('stage');
   stageEl.textContent = state.stage;
@@ -41,12 +44,28 @@ function render(state) {
 if (window.api) {
   window.api.onStateUpdate(render);
   window.api.requestState();
+  // 전체화면 상태 추적
+  window.api.onClockFullscreenChanged((isFs) => {
+    document.body.classList.toggle('is-fullscreen', isFs);
+  });
 }
+
+$('btnClose').addEventListener('click', async () => {
+  if (window.api) await window.api.closeClock();
+});
 
 document.addEventListener('keydown', (e) => {
   if (!window.api) return;
+  const isFs = document.body.classList.contains('is-fullscreen');
+  // 전체화면 시 Enter/Esc는 해제용
+  if (isFs && (e.code === 'Enter' || e.key === 'Escape')) {
+    e.preventDefault();
+    window.api.fullscreenClock();
+    return;
+  }
   if (e.code === 'Space') { e.preventDefault(); window.api.sendCommand('toggle'); }
   else if (e.code === 'ArrowRight') window.api.sendCommand('next');
   else if (e.code === 'ArrowLeft') window.api.sendCommand('prev');
   else if (e.key === 'r' || e.key === 'R') window.api.sendCommand('reset');
+  else if (e.key === 'F11') { e.preventDefault(); window.api.fullscreenClock(); }
 });

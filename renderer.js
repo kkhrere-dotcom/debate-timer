@@ -943,6 +943,8 @@ function buildBellOptions(currentValue) {
     .join('');
 }
 
+let _dragSrcIndex = -1;
+
 function renderPhaseRows() {
   const container = $('phaseRows');
   container.innerHTML = '';
@@ -951,7 +953,9 @@ function renderPhaseRows() {
     const alertCount = ph.alerts.length;
     const row = document.createElement('div');
     row.className = 'phase-row';
+    row.dataset.index = String(i);
     row.innerHTML = `
+      <span class="phase-drag-handle" title="드래그해서 순서 변경">≡</span>
       <span class="phase-num">${i + 1}</span>
       <input data-field="stage" type="text" value="${escapeHtml(ph.stage)}" />
       <input data-field="detail" type="text" value="${escapeHtml(ph.detail)}" />
@@ -965,7 +969,10 @@ function renderPhaseRows() {
       </select>
       <select data-field="bellPreset" title="이 단계의 기본 종소리/음성">${buildBellOptions(ph.bellPreset)}</select>
       <button class="phase-alert-btn" data-action="edit-alerts" title="알람 시점 편집">🔔<span class="alert-badge">${alertCount}</span></button>
-      <button class="phase-del" data-action="delete">✕</button>
+      <div class="phase-actions">
+        <button class="phase-dup" data-action="duplicate" title="이 단계 복제">📋</button>
+        <button class="phase-del" data-action="delete" title="단계 삭제">✕</button>
+      </div>
     `;
     row.querySelectorAll('input, select').forEach((el) => {
       el.addEventListener('input', () => {
@@ -988,16 +995,64 @@ function renderPhaseRows() {
       });
     });
     row.querySelector('[data-action="edit-alerts"]').addEventListener('click', () => openAlertEditor(i));
+    row.querySelector('[data-action="duplicate"]').addEventListener('click', () => duplicatePhase(i));
     row.querySelector('[data-action="delete"]').addEventListener('click', () => {
       if (modalSettings.phases.length <= 1) {
         alert('최소 한 개의 단계는 필요합니다.');
         return;
       }
+      if (!confirm(`${i + 1}단계 '${ph.stage}${ph.detail ? ' · ' + ph.detail : ''}'를 삭제하시겠습니까?\n실수로 삭제했다면 모달의 '취소'를 누르세요 (저장 전이면 모달 닫기 후 다시 열면 복구됨).`)) return;
       modalSettings.phases.splice(i, 1);
       renderPhaseRows();
     });
+
+    // 드래그 핸들 — 핸들에서 mousedown 시에만 row를 draggable로
+    const handle = row.querySelector('.phase-drag-handle');
+    handle.addEventListener('mousedown', () => { row.draggable = true; });
+    handle.addEventListener('mouseup', () => { row.draggable = false; });
+
+    row.addEventListener('dragstart', (e) => {
+      _dragSrcIndex = i;
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', String(i)); } catch (er) {}
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      row.draggable = false;
+      document.querySelectorAll('.phase-row.drag-over').forEach((r) => r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover', (e) => {
+      if (_dragSrcIndex < 0) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drag-over');
+    });
+    row.addEventListener('drop', (e) => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      const dst = i;
+      const src = _dragSrcIndex;
+      _dragSrcIndex = -1;
+      if (src < 0 || src === dst) return;
+      const moved = modalSettings.phases.splice(src, 1)[0];
+      modalSettings.phases.splice(dst, 0, moved);
+      renderPhaseRows();
+    });
+
     container.appendChild(row);
   });
+}
+
+function duplicatePhase(i) {
+  const original = modalSettings.phases[i];
+  if (!original) return;
+  const copy = JSON.parse(JSON.stringify(original));
+  modalSettings.phases.splice(i + 1, 0, copy);
+  renderPhaseRows();
 }
 
 function escapeHtml(s) {

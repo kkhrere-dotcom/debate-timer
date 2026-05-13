@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // 시계/팝업이 받는 이벤트
   onStateUpdate: (cb) => ipcRenderer.on('state-update', (_, state) => cb(state)),
+  onClockFullscreenChanged: (cb) => ipcRenderer.on('clock-fullscreen-changed', (_, isFs) => cb(isFs)),
 
   // 콘솔이 받는 이벤트
   onClockClosed: (cb) => ipcRenderer.on('clock-closed', cb),

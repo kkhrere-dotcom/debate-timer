@@ -80,7 +80,9 @@ function createClockWindow() {
     y: 40,
     minWidth: 600,
     minHeight: 400,
-    backgroundColor: '#ffffff',
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
     title: '⏱ 과학토론타이머',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -89,6 +91,19 @@ function createClockWindow() {
     },
   });
   clockWindow.loadFile('clock.html');
+
+  // 전체화면 상태를 시계 렌더러에 알림
+  clockWindow.on('enter-full-screen', () => {
+    if (clockWindow && !clockWindow.isDestroyed()) {
+      clockWindow.webContents.send('clock-fullscreen-changed', true);
+    }
+  });
+  clockWindow.on('leave-full-screen', () => {
+    if (clockWindow && !clockWindow.isDestroyed()) {
+      clockWindow.webContents.send('clock-fullscreen-changed', false);
+    }
+  });
+
   clockWindow.on('closed', () => {
     clockWindow = null;
     if (consoleWindow && !consoleWindow.isDestroyed()) {

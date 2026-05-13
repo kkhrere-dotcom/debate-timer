@@ -91,9 +91,72 @@ body {
   transition: background 0.2s, color 0.2s;
 }
 
-/* 시계 윈도우: body 배경에 투명도 적용 (글자/UI는 그대로) */
+/* 시계 윈도우: frameless + 투명도 가능. body 배경에만 투명도 적용 (글자/UI는 그대로) */
+body.clock {
+  position: relative;
+  padding: 24px 32px;
+}
 body.with-clock-opacity {
   background: color-mix(in srgb, var(--bg) calc(var(--clock-opacity, 100) * 1%), transparent);
+}
+/* 시계 상단 드래그 영역 (40px 보이지 않는 핸들) */
+.clock-drag-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 56px; /* 닫기 버튼 영역 비움 */
+  height: 36px;
+  -webkit-app-region: drag;
+  z-index: 5;
+}
+/* 시계 닫기 버튼 */
+.clock-close-x {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 13px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--fg-faint);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  z-index: 10;
+  -webkit-app-region: no-drag;
+}
+.clock-close-x:hover {
+  background: var(--accent-red);
+  color: #ffffff;
+  border-color: var(--accent-red);
+}
+/* 전체화면 안내 — 평소엔 숨김, 전체화면일 때만 표시 */
+.fs-hint {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  background: rgba(0,0,0,0.55);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+body.is-fullscreen .fs-hint {
+  opacity: 1;
+}
+body.is-fullscreen .clock-drag-bar,
+body.is-fullscreen .clock-close-x {
+  display: none;
 }
 body {
   display: flex;
@@ -454,13 +517,38 @@ body.popup button { -webkit-app-region: no-drag; }
 }
 .phase-row {
   display: grid;
-  grid-template-columns: 22px 1fr 1fr 40px 40px 72px 96px 56px 22px;
+  grid-template-columns: 22px 22px 1fr 1fr 40px 40px 72px 92px 50px 48px;
   gap: 4px;
   align-items: center;
   padding: 6px 6px;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
 }
+.phase-row.dragging { opacity: 0.4; }
+.phase-row.drag-over { box-shadow: inset 0 2px 0 var(--accent-blue); }
+.phase-drag-handle {
+  cursor: grab;
+  color: var(--fg-faint);
+  font-size: 14px;
+  user-select: none;
+  text-align: center;
+  line-height: 1;
+}
+.phase-drag-handle:active { cursor: grabbing; }
+.phase-actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+}
+.phase-actions button {
+  padding: 5px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+  box-shadow: none;
+  min-width: 22px;
+}
+.phase-actions .phase-dup { background: var(--accent-cyan); color: #1a1a1a; }
+.phase-actions .phase-del { background: var(--accent-red); }
 .phase-row .phase-alert-btn {
   padding: 5px 6px;
   font-size: 11px;
