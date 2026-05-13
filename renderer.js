@@ -81,6 +81,7 @@ const DEFAULT_SETTINGS = {
   volume: 0.7,
   popupOpacity: 100, // 0-100, 100 = fully opaque
   clockOpacity: 100,
+  clockTitleScale: 100, // 50-200, 100 = 기본 크기
   phases: buildDefaultPhases(),
   scenarioPresets: [],
   customSounds: [],
@@ -109,6 +110,7 @@ function parseSettings(raw) {
       volume: typeof parsed.volume === 'number' ? parsed.volume : DEFAULT_SETTINGS.volume,
       popupOpacity: typeof parsed.popupOpacity === 'number' ? parsed.popupOpacity : 100,
       clockOpacity: typeof parsed.clockOpacity === 'number' ? parsed.clockOpacity : 100,
+      clockTitleScale: typeof parsed.clockTitleScale === 'number' ? parsed.clockTitleScale : 100,
       phases: Array.isArray(parsed.phases) && parsed.phases.length > 0
         ? ensurePhasesHaveAlerts(parsed.phases)
         : buildDefaultPhases(),
@@ -367,6 +369,7 @@ function snapshot() {
     title: view.title,
     popupOpacity: view.popupOpacity,
     clockOpacity: view.clockOpacity,
+    clockTitleScale: view.clockTitleScale,
     stage: p ? p.stage : '',
     detail: p ? p.detail : '',
     kind: p ? p.kind : 'present',
@@ -540,10 +543,11 @@ function testNextAlert() {
   }
 }
 
-// 콘솔 투명도 슬라이더
+// 콘솔 투명도·제목크기 슬라이더
 function initConsoleOpacitySliders() {
   const popup = $('consolePopupOpacity');
   const clock = $('consoleClockOpacity');
+  const title = $('consoleClockTitleScale');
   if (popup) {
     popup.value = settings.popupOpacity;
     $('consolePopupOpacityVal').textContent = settings.popupOpacity + '%';
@@ -562,6 +566,17 @@ function initConsoleOpacitySliders() {
       const v = parseInt(clock.value, 10);
       settings.clockOpacity = v;
       $('consoleClockOpacityVal').textContent = v + '%';
+      pushState();
+      saveSettings(settings);
+    });
+  }
+  if (title) {
+    title.value = settings.clockTitleScale;
+    $('consoleClockTitleScaleVal').textContent = settings.clockTitleScale + '%';
+    title.addEventListener('input', () => {
+      const v = parseInt(title.value, 10);
+      settings.clockTitleScale = v;
+      $('consoleClockTitleScaleVal').textContent = v + '%';
       pushState();
       saveSettings(settings);
     });

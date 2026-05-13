@@ -16,6 +16,9 @@ function render(state) {
     document.documentElement.style.setProperty('--clock-opacity', String(state.clockOpacity));
     document.body.classList.toggle('with-clock-opacity', state.clockOpacity < 100);
   }
+  if (typeof state.clockTitleScale === 'number') {
+    document.documentElement.style.setProperty('--clock-title-scale', String(state.clockTitleScale / 100));
+  }
 
   const stageEl = $('stage');
   stageEl.textContent = state.stage;

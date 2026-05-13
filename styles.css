@@ -112,6 +112,10 @@ body.clock .count {
 body.with-clock-opacity {
   background: color-mix(in srgb, var(--bg) calc(var(--clock-opacity, 100) * 1%), transparent);
 }
+
+/* 시계 창 제목 크기 스케일 (--clock-title-scale = 1.0 기본) */
+body.clock .stage  { font-size: calc(56px * var(--clock-title-scale, 1)); }
+body.clock .detail { font-size: calc(40px * var(--clock-title-scale, 1)); }
 /* 시계 닫기 버튼 (전체화면 중에도 표시. 클릭 시 전체화면 해제 또는 창 닫기) */
 .clock-close-x {
   position: absolute;
