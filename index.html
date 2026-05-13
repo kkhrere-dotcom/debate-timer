@@ -101,6 +101,7 @@
         <button class="tab" data-tab="scenario">시나리오</button>
         <button class="tab" data-tab="sound">종소리</button>
         <button class="tab" data-tab="title">제목</button>
+        <button class="tab" data-tab="data">데이터</button>
       </div>
       <div class="modal-body">
         <!-- 테마 탭 -->
@@ -233,6 +234,29 @@
             <label for="titleInput">앱 제목 (윈도우 타이틀바에 표시)</label>
             <input type="text" id="titleInput" placeholder="예: 2026 과학토론대회" />
             <div class="hint">시계 창 상단 타이틀바에 표시됩니다. 콘솔/팝업 제목에도 적용.</div>
+          </div>
+        </div>
+
+        <!-- 데이터 탭 -->
+        <div class="tab-pane" data-pane="data">
+          <div class="data-status" id="dataStatus">
+            <div class="data-row"><span class="data-label">저장 위치</span><span class="data-value" id="dataPath">…</span></div>
+            <div class="data-row"><span class="data-label">파일 크기</span><span class="data-value" id="dataSize">…</span></div>
+            <div class="data-row"><span class="data-label">마지막 저장</span><span class="data-value" id="dataModified">…</span></div>
+            <div class="data-row"><span class="data-label">시나리오 프리셋</span><span class="data-value" id="dataPresets">…</span></div>
+            <div class="data-row"><span class="data-label">커스텀 음성</span><span class="data-value" id="dataSounds">…</span></div>
+          </div>
+
+          <div class="data-actions">
+            <button class="btn-data-action" id="btnOpenSettingsFolder">📁 파일 위치 열기</button>
+            <button class="btn-data-action" id="btnExportSettings">⬇ 백업 파일로 내보내기</button>
+            <button class="btn-data-action" id="btnImportSettings">⬆ 백업 파일에서 가져오기</button>
+          </div>
+
+          <div class="data-note">
+            <strong>📌 데이터 저장 구조</strong><br>
+            모든 설정·시나리오·프리셋·커스텀 음성은 위 경로의 <code>settings.json</code> 파일에 저장됩니다.<br>
+            앱 종료/재시작 후에도 자동으로 복원됩니다. 큰 데이터가 손실되는 경우를 대비해 주기적으로 <strong>백업 파일로 내보내기</strong>를 추천합니다.
           </div>
         </div>
       </div>

@@ -1,9 +1,43 @@
-const { app, BrowserWindow, Menu, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, screen, dialog } = require('electron');
 const path = require('path');
+const fs = require('node:fs');
+
+// userData 경로를 dev/packaged 동일하게 고정 (~/Library/Application Support/debate-timer)
+app.setName('debate-timer');
 
 let consoleWindow = null;
 let clockWindow = null;
 let popupWindow = null;
+
+function getSettingsFilePath() {
+  return path.join(app.getPath('userData'), 'settings.json');
+}
+
+function loadSettingsFromFile() {
+  try {
+    const f = getSettingsFilePath();
+    if (fs.existsSync(f)) {
+      return fs.readFileSync(f, 'utf8');
+    }
+  } catch (e) {
+    console.error('[settings] load failed:', e);
+  }
+  return null;
+}
+
+function saveSettingsToFile(json) {
+  try {
+    const f = getSettingsFilePath();
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    const tmp = f + '.tmp';
+    fs.writeFileSync(tmp, json, 'utf8');
+    fs.renameSync(tmp, f);
+    return { ok: true, path: f, bytes: Buffer.byteLength(json, 'utf8') };
+  } catch (e) {
+    console.error('[settings] save failed:', e);
+    return { ok: false, error: e.message };
+  }
+}
 
 function createConsoleWindow() {
   const display = screen.getPrimaryDisplay();
@@ -232,6 +266,63 @@ ipcMain.handle('popup:close', () => {
   if (popupWindow && !popupWindow.isDestroyed()) popupWindow.close();
 });
 ipcMain.handle('popup:is-open', () => !!(popupWindow && !popupWindow.isDestroyed()));
+
+// 설정 파일 I/O
+ipcMain.handle('settings:load', () => loadSettingsFromFile());
+ipcMain.handle('settings:save', (_, json) => saveSettingsToFile(json));
+ipcMain.handle('settings:path', () => getSettingsFilePath());
+ipcMain.handle('settings:exists', () => {
+  try { return fs.existsSync(getSettingsFilePath()); } catch (e) { return false; }
+});
+ipcMain.handle('settings:meta', () => {
+  try {
+    const f = getSettingsFilePath();
+    if (!fs.existsSync(f)) return { exists: false, path: f };
+    const stat = fs.statSync(f);
+    return { exists: true, path: f, size: stat.size, modified: stat.mtimeMs };
+  } catch (e) {
+    return { exists: false, error: e.message };
+  }
+});
+
+ipcMain.handle('settings:export', async (e, json) => {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  const defaultName = 'debate-timer-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  const result = await dialog.showSaveDialog(win, {
+    title: '설정 내보내기 (백업)',
+    defaultPath: defaultName,
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  try {
+    fs.writeFileSync(result.filePath, json, 'utf8');
+    return { ok: true, path: result.filePath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('settings:import', async (e) => {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  const result = await dialog.showOpenDialog(win, {
+    title: '설정 가져오기 (복원)',
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePaths.length) return { ok: false, canceled: true };
+  try {
+    const data = fs.readFileSync(result.filePaths[0], 'utf8');
+    JSON.parse(data); // 유효성 체크
+    return { ok: true, data, path: result.filePaths[0] };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('settings:open-folder', () => {
+  const { shell } = require('electron');
+  return shell.showItemInFolder(getSettingsFilePath());
+});
 
 app.whenReady().then(() => {
   buildMenu();

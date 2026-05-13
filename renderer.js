@@ -59,10 +59,9 @@ const DEFAULT_SETTINGS = {
   customSounds: [],
 };
 
-function loadSettings() {
+function parseSettings(raw) {
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return { ...DEFAULT_SETTINGS, phases: buildDefaultPhases() };
     const parsed = JSON.parse(raw);
     return {
       theme: parsed.theme || DEFAULT_SETTINGS.theme,
@@ -77,18 +76,70 @@ function loadSettings() {
       customSounds: Array.isArray(parsed.customSounds) ? parsed.customSounds : [],
     };
   } catch (e) {
-    return { ...DEFAULT_SETTINGS, phases: buildDefaultPhases() };
+    console.error('parseSettings:', e);
+    return null;
   }
 }
 
-function saveSettings(s) {
+// localStorage는 빠른 동기 read를 위한 캐시. 권위 있는 저장소는 main process의 settings.json 파일.
+function loadSettings() {
+  // 1차: localStorage (빠른 동기). 2차 비동기 복원은 init()에서.
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-    return true;
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    const parsed = parseSettings(raw);
+    if (parsed) return parsed;
+  } catch (e) {}
+  return { ...DEFAULT_SETTINGS, phases: buildDefaultPhases() };
+}
+
+// 비동기 복원: localStorage가 비어있으면 파일에서 복구. 파일도 비어있으면 그대로.
+async function recoverSettingsFromFileIfNeeded() {
+  if (!window.api || !window.api.loadSettingsFile) return false;
+  // localStorage에 데이터가 이미 있으면 복구 불필요
+  const ls = localStorage.getItem(SETTINGS_KEY);
+  if (ls) return false;
+  const raw = await window.api.loadSettingsFile();
+  if (!raw) return false;
+  const parsed = parseSettings(raw);
+  if (!parsed) return false;
+  // 복원 → localStorage에도 캐시
+  try { localStorage.setItem(SETTINGS_KEY, raw); } catch (e) {}
+  settings = parsed;
+  PHASES = settings.phases;
+  applyTheme(settings.theme);
+  applyTitle(settings.title);
+  currentIndex = 0;
+  resetPhaseState();
+  refresh();
+  console.log('Recovered settings from file backup at', new Date().toISOString());
+  return true;
+}
+
+function saveSettings(s) {
+  const json = JSON.stringify(s);
+  // 1) localStorage 즉시 (빠른 캐시)
+  let lsOk = true;
+  try {
+    localStorage.setItem(SETTINGS_KEY, json);
   } catch (e) {
-    alert('저장 공간이 부족합니다. 종소리 파일을 줄이거나 시나리오 프리셋을 정리해주세요.\n\n' + e.message);
+    lsOk = false;
+  }
+  // 2) 파일에도 비동기 백업 (권위)
+  if (window.api && window.api.saveSettingsFile) {
+    window.api.saveSettingsFile(json).then((res) => {
+      if (!res || !res.ok) {
+        console.error('File save failed:', res && res.error);
+      }
+    }).catch((e) => {
+      console.error('File save error:', e);
+    });
+  }
+  if (!lsOk) {
+    // localStorage 실패 (보통 quota). 파일 저장은 계속 시도되지만 사용자에게 알림.
+    alert('빠른 캐시 저장 공간이 부족합니다. 음성 파일이 많으면 일부 정리하세요. (디스크의 settings.json은 별도로 보관됩니다.)');
     return false;
   }
+  return true;
 }
 
 function genId() {
@@ -466,6 +517,77 @@ function renderSettingsUI() {
   $('volumeValue').textContent = Math.round(modalSettings.volume * 100) + '%';
   // 제목
   $('titleInput').value = modalSettings.title;
+  // 데이터 탭 상태
+  renderDataStatus();
+}
+
+function fmtBytes(b) {
+  if (!b && b !== 0) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+function fmtDate(ms) {
+  if (!ms) return '—';
+  const d = new Date(ms);
+  const pad = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+    + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+
+async function renderDataStatus() {
+  if (!window.api || !window.api.getSettingsMeta) return;
+  try {
+    const meta = await window.api.getSettingsMeta();
+    $('dataPath').textContent = meta.path || '—';
+    $('dataSize').textContent = meta.exists ? fmtBytes(meta.size) : '(파일 없음 — 아직 저장 안 됨)';
+    $('dataModified').textContent = meta.exists ? fmtDate(meta.modified) : '—';
+  } catch (e) {
+    $('dataPath').textContent = '경로 조회 실패: ' + e.message;
+  }
+  $('dataPresets').textContent = modalSettings.scenarioPresets.length + '개';
+  $('dataSounds').textContent = modalSettings.customSounds.length + '개';
+}
+
+async function exportSettingsAction() {
+  if (!window.api || !window.api.exportSettings) return;
+  // 저장되지 않은 모달 편집이 있을 수 있으므로 settings 기준으로 내보내기
+  const json = JSON.stringify(settings, null, 2);
+  const res = await window.api.exportSettings(json);
+  if (res && res.ok) {
+    alert('백업 파일로 내보냈습니다:\n' + res.path);
+  } else if (res && res.error) {
+    alert('내보내기 실패: ' + res.error);
+  }
+}
+
+async function importSettingsAction() {
+  if (!window.api || !window.api.importSettings) return;
+  const res = await window.api.importSettings();
+  if (!res || !res.ok) {
+    if (res && res.error) alert('가져오기 실패: ' + res.error);
+    return;
+  }
+  if (!confirm('현재 설정을 가져온 백업으로 덮어쓰시겠습니까?\n(현재 시나리오·프리셋·음성·테마 등 모두 교체됨)')) return;
+  const parsed = parseSettings(res.data);
+  if (!parsed) { alert('백업 파일이 유효하지 않습니다.'); return; }
+  settings = parsed;
+  saveSettings(settings);
+  // modalSettings도 갱신
+  modalSettings = JSON.parse(JSON.stringify(settings));
+  applyTheme(settings.theme);
+  applyTitle(settings.title);
+  PHASES = settings.phases;
+  currentIndex = 0;
+  resetPhaseState();
+  refresh();
+  renderSettingsUI();
+  alert('백업에서 복원했습니다.');
+}
+
+async function openSettingsFolderAction() {
+  if (window.api && window.api.openSettingsFolder) await window.api.openSettingsFolder();
 }
 
 function updateSoundSelection() {
@@ -915,6 +1037,9 @@ function bindButtons() {
     btnAlertEditorClose: closeAlertEditor,
     btnAlertEditorDone: closeAlertEditor,
     btnAddAlert: addAlert,
+    btnOpenSettingsFolder: openSettingsFolderAction,
+    btnExportSettings: exportSettingsAction,
+    btnImportSettings: importSettingsAction,
   };
   for (const [id, fn] of Object.entries(map)) {
     const el = document.getElementById(id);
@@ -1052,6 +1177,9 @@ function handleKey(e) {
 document.addEventListener('keydown', handleKey);
 bindButtons();
 refresh();
+
+// 비동기 복원: localStorage가 비어있는 경우 파일에서 복구
+recoverSettingsFromFileIfNeeded().catch((e) => console.error('Recovery failed:', e));
 
 // ============ 자식 윈도우 통신 ============
 if (window.api) {
