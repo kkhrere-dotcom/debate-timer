@@ -271,8 +271,32 @@ body.popup {
   gap: 4px;
   overflow: hidden;
   box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+  position: relative;
 }
 body.popup button { -webkit-app-region: no-drag; }
+.popup .popup-close-x {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 12px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--fg-faint);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  z-index: 10;
+}
+.popup .popup-close-x:hover {
+  background: var(--accent-red);
+  color: #ffffff;
+  border-color: var(--accent-red);
+}
 .popup .popup-stage {
   font-size: 11px;
   color: var(--fg-faint);
@@ -441,8 +465,8 @@ body.popup button { -webkit-app-region: no-drag; }
 }
 .phase-row {
   display: grid;
-  grid-template-columns: 28px 1fr 1.4fr 60px 60px 90px 28px;
-  gap: 6px;
+  grid-template-columns: 24px 1fr 1.1fr 46px 46px 78px 110px 24px;
+  gap: 5px;
   align-items: center;
   padding: 6px 8px;
   border-bottom: 1px solid var(--border);
