@@ -12,10 +12,7 @@ function render(state) {
   if (!state) return;
   if (state.theme) applyTheme(state.theme);
   if (state.title) applyTitle(state.title);
-  if (typeof state.clockOpacity === 'number') {
-    document.documentElement.style.setProperty('--clock-opacity', String(state.clockOpacity));
-    document.body.classList.toggle('with-clock-opacity', state.clockOpacity < 100);
-  }
+  // 시계 창 투명도는 드래그 호환성 문제로 비활성화 (현재 불투명 고정)
 
   const stageEl = $('stage');
   stageEl.textContent = state.stage;

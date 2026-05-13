@@ -80,8 +80,7 @@ function createClockWindow() {
     y: 40,
     minWidth: 600,
     minHeight: 400,
-    transparent: true,
-    backgroundColor: '#00000000',
+    backgroundColor: '#ffffff',
     title: '⏱ 과학토론타이머',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
