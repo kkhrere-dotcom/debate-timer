@@ -35,6 +35,8 @@ const DEFAULT_SETTINGS = {
   bellPreset: 'classic',
   volume: 0.7,
   phases: buildDefaultPhases(),
+  scenarioPresets: [],
+  customSounds: [],
 };
 
 function loadSettings() {
@@ -50,6 +52,8 @@ function loadSettings() {
       phases: Array.isArray(parsed.phases) && parsed.phases.length > 0
         ? parsed.phases
         : buildDefaultPhases(),
+      scenarioPresets: Array.isArray(parsed.scenarioPresets) ? parsed.scenarioPresets : [],
+      customSounds: Array.isArray(parsed.customSounds) ? parsed.customSounds : [],
     };
   } catch (e) {
     return { ...DEFAULT_SETTINGS, phases: buildDefaultPhases() };
@@ -57,7 +61,17 @@ function loadSettings() {
 }
 
 function saveSettings(s) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    return true;
+  } catch (e) {
+    alert('저장 공간이 부족합니다. 종소리 파일을 줄이거나 시나리오 프리셋을 정리해주세요.\n\n' + e.message);
+    return false;
+  }
+}
+
+function genId() {
+  return (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 }
 
 function applyTheme(theme) {
@@ -158,11 +172,19 @@ function bellGong(t0, vol) {
   o2.start(t0); o2.stop(t0 + dur);
 }
 
-function ringBell(offset) {
+function playCustomSound(id, vol) {
+  const sound = settings.customSounds.find((s) => s.id === id);
+  if (!sound) return;
+  const audio = new Audio(sound.dataUrl);
+  audio.volume = Math.max(0, Math.min(1, vol));
+  audio.play().catch((e) => console.error('Custom sound play failed:', e));
+}
+
+function ringBellSynth(offset, preset) {
   if (!audioCtx) return;
   const t0 = audioCtx.currentTime + (offset || 0);
   const vol = Math.max(0, Math.min(1, settings.volume));
-  switch (settings.bellPreset) {
+  switch (preset) {
     case 'chime': bellChime(t0, vol); break;
     case 'buzz':  bellBuzz(t0, vol);  break;
     case 'gong':  bellGong(t0, vol);  break;
@@ -170,16 +192,40 @@ function ringBell(offset) {
   }
 }
 
+function ringBell(offset) {
+  const preset = settings.bellPreset;
+  if (preset && preset.startsWith('custom:')) {
+    const id = preset.slice('custom:'.length);
+    setTimeout(() => playCustomSound(id, settings.volume), (offset || 0) * 1000);
+  } else {
+    ringBellSynth(offset, preset);
+  }
+}
+
 function playWarning() { ringBell(0); }
 function playEnd() {
   ringBell(0);
-  if (settings.bellPreset !== 'gong') ringBell(0.7);
+  // 빌트인 종소리 중 일부는 두 번 울리는 게 익숙해서 유지
+  if (settings.bellPreset === 'classic' || settings.bellPreset === 'chime' || settings.bellPreset === 'buzz') {
+    ringBell(0.7);
+  }
 }
 
 function previewSound(preset) {
   ensureAudio();
+  // 모달 열려있으면 modalSettings의 볼륨과 커스텀 사운드 사용
+  const src = modalSettings || settings;
+  const vol = Math.max(0, Math.min(1, src.volume));
+  if (preset && preset.startsWith('custom:')) {
+    const id = preset.slice('custom:'.length);
+    const sound = src.customSounds.find((s) => s.id === id);
+    if (!sound) return;
+    const audio = new Audio(sound.dataUrl);
+    audio.volume = vol;
+    audio.play().catch((e) => console.error('Preview failed:', e));
+    return;
+  }
   const t0 = audioCtx.currentTime;
-  const vol = Math.max(0, Math.min(1, settings.volume));
   switch (preset) {
     case 'chime': bellChime(t0, vol); break;
     case 'buzz':  bellBuzz(t0, vol); break;
@@ -380,16 +426,167 @@ function renderSettingsUI() {
   document.querySelectorAll('.theme-card').forEach((c) => {
     c.classList.toggle('selected', c.dataset.theme === modalSettings.theme);
   });
-  // 시나리오
+  // 시나리오 프리셋
+  renderPresetList();
+  // 시나리오 단계
   renderPhaseRows();
-  // 종소리
-  document.querySelectorAll('.sound-option').forEach((o) => {
-    o.classList.toggle('selected', o.dataset.sound === modalSettings.bellPreset);
-  });
+  // 종소리 빌트인 선택 표시
+  updateSoundSelection();
+  // 커스텀 종소리 리스트
+  renderCustomSounds();
   $('volumeSlider').value = Math.round(modalSettings.volume * 100);
   $('volumeValue').textContent = Math.round(modalSettings.volume * 100) + '%';
   // 제목
   $('titleInput').value = modalSettings.title;
+}
+
+function updateSoundSelection() {
+  document.querySelectorAll('.sound-option').forEach((o) => {
+    o.classList.toggle('selected', o.dataset.sound === modalSettings.bellPreset);
+  });
+}
+
+function renderPresetList() {
+  const list = $('presetList');
+  list.innerHTML = '';
+  if (!modalSettings.scenarioPresets.length) {
+    const empty = document.createElement('div');
+    empty.className = 'preset-empty';
+    empty.textContent = '아직 저장된 프리셋이 없습니다. 아래에서 시나리오를 편집한 뒤 저장하세요.';
+    list.appendChild(empty);
+    return;
+  }
+  modalSettings.scenarioPresets.forEach((p) => {
+    const item = document.createElement('div');
+    item.className = 'preset-item';
+    item.innerHTML = `
+      <div class="preset-item-name">${escapeHtml(p.name)}</div>
+      <div class="preset-item-meta">${p.phases.length}단계</div>
+      <button class="btn-load" data-action="load">불러오기</button>
+      <button class="btn-delete" data-action="delete">✕</button>
+    `;
+    item.querySelector('[data-action="load"]').addEventListener('click', () => loadPreset(p.id));
+    item.querySelector('[data-action="delete"]').addEventListener('click', () => deletePreset(p.id));
+    list.appendChild(item);
+  });
+}
+
+function saveCurrentAsPreset() {
+  const name = prompt('프리셋 이름을 입력하세요:', '내 시나리오 ' + (modalSettings.scenarioPresets.length + 1));
+  if (!name) return;
+  modalSettings.scenarioPresets.push({
+    id: genId(),
+    name: name.trim(),
+    phases: JSON.parse(JSON.stringify(modalSettings.phases)),
+  });
+  renderPresetList();
+}
+
+function loadPreset(id) {
+  const p = modalSettings.scenarioPresets.find((x) => x.id === id);
+  if (!p) return;
+  if (!confirm(`"${p.name}" 시나리오를 불러옵니다. 현재 편집 중인 내용은 사라집니다. 계속할까요?`)) return;
+  modalSettings.phases = JSON.parse(JSON.stringify(p.phases));
+  renderPhaseRows();
+}
+
+function deletePreset(id) {
+  const p = modalSettings.scenarioPresets.find((x) => x.id === id);
+  if (!p) return;
+  if (!confirm(`"${p.name}" 프리셋을 삭제하시겠습니까?`)) return;
+  modalSettings.scenarioPresets = modalSettings.scenarioPresets.filter((x) => x.id !== id);
+  renderPresetList();
+}
+
+function renderCustomSounds() {
+  const grid = $('customSoundGrid');
+  grid.innerHTML = '';
+  if (!modalSettings.customSounds.length) return;
+  modalSettings.customSounds.forEach((sound) => {
+    const id = 'custom:' + sound.id;
+    const opt = document.createElement('div');
+    opt.className = 'sound-option';
+    opt.dataset.sound = id;
+    if (modalSettings.bellPreset === id) opt.classList.add('selected');
+    opt.innerHTML = `
+      <span>🎵 ${escapeHtml(sound.name)} <span style="color:var(--fg-faint);font-weight:500;font-size:11px;">${formatBytes(sound.size || 0)}</span></span>
+      <span style="display:flex;gap:4px;">
+        <button class="preview-btn" data-preview="${id}">미리듣기</button>
+        <button class="btn-delete" data-action="delete-sound" style="padding:4px 10px;font-size:11px;border-radius:6px;background:var(--accent-red);">✕</button>
+      </span>
+    `;
+    opt.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      modalSettings.bellPreset = id;
+      updateSoundSelection();
+    });
+    opt.querySelector('.preview-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      previewSoundFromModal(id);
+    });
+    opt.querySelector('[data-action="delete-sound"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!confirm(`"${sound.name}" 종소리를 삭제하시겠습니까?`)) return;
+      modalSettings.customSounds = modalSettings.customSounds.filter((s) => s.id !== sound.id);
+      if (modalSettings.bellPreset === id) modalSettings.bellPreset = 'classic';
+      renderCustomSounds();
+      updateSoundSelection();
+    });
+    grid.appendChild(opt);
+  });
+}
+
+function previewSoundFromModal(preset) {
+  // 모달에서 미리듣기는 modalSettings 기준으로 (저장 전이라도 동작)
+  const saved = settings;
+  settings = modalSettings;
+  previewSound(preset);
+  settings = saved;
+}
+
+function formatBytes(b) {
+  if (!b) return '';
+  if (b < 1024) return b + 'B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + 'KB';
+  return (b / 1024 / 1024).toFixed(2) + 'MB';
+}
+
+const MAX_SOUND_BYTES = 1.5 * 1024 * 1024; // ~1.5MB
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function addSoundFiles(files) {
+  for (const file of files) {
+    if (!file.type.startsWith('audio/')) {
+      alert(`"${file.name}"은 오디오 파일이 아닙니다. 건너뜁니다.`);
+      continue;
+    }
+    if (file.size > MAX_SOUND_BYTES) {
+      alert(`"${file.name}"이 너무 큽니다 (${formatBytes(file.size)}). ${formatBytes(MAX_SOUND_BYTES)} 이하만 추가 가능합니다.`);
+      continue;
+    }
+    try {
+      const dataUrl = await readFileAsDataURL(file);
+      const id = genId();
+      modalSettings.customSounds.push({
+        id,
+        name: file.name.replace(/\.[^.]+$/, ''), // 확장자 제거
+        size: file.size,
+        type: file.type,
+        dataUrl,
+      });
+    } catch (e) {
+      alert(`"${file.name}" 읽기 실패: ${e.message}`);
+    }
+  }
+  renderCustomSounds();
 }
 
 function renderPhaseRows() {
@@ -521,11 +718,48 @@ function bindButtons() {
     btnSettingsSave: applySettingsAndSave,
     btnAddPhase: addPhase,
     btnResetPhases: resetPhasesDefault,
+    btnSavePreset: saveCurrentAsPreset,
   };
   for (const [id, fn] of Object.entries(map)) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', fn);
   }
+
+  // 드래그앤드롭 영역
+  const dropZone = $('soundDropZone');
+  const fileInput = $('soundFileInput');
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) addSoundFiles(Array.from(fileInput.files));
+      fileInput.value = '';
+    });
+    ['dragenter', 'dragover'].forEach((ev) => {
+      dropZone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragging');
+      });
+    });
+    ['dragleave', 'drop'].forEach((ev) => {
+      dropZone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragging');
+      });
+    });
+    dropZone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length) addSoundFiles(Array.from(files));
+    });
+  }
+
+  // 윈도우 전체 드롭은 무시 (브라우저가 파일을 열지 않도록)
+  ['dragover', 'drop'].forEach((ev) => {
+    window.addEventListener(ev, (e) => {
+      if (!dropZone || !dropZone.contains(e.target)) e.preventDefault();
+    });
+  });
 
   // 탭
   document.querySelectorAll('.modal-tabs .tab').forEach((t) => {

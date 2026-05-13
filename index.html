@@ -123,7 +123,15 @@
 
         <!-- 시나리오 탭 -->
         <div class="tab-pane" data-pane="scenario">
-          <div class="phases-toolbar">
+          <div class="preset-section">
+            <div class="preset-section-title">📚 저장된 시나리오 프리셋</div>
+            <div class="preset-list" id="presetList">
+              <div class="preset-empty">아직 저장된 프리셋이 없습니다.</div>
+            </div>
+            <button id="btnSavePreset" style="background:var(--accent-green);padding:8px 14px;font-size:12px;width:100%;margin-top:6px;">+ 현재 시나리오를 프리셋으로 저장</button>
+          </div>
+
+          <div class="phases-toolbar" style="margin-top:18px;">
             <div style="font-size:11px; color:var(--fg-faint);">단계명·상세·시간을 직접 수정하세요. 저장 시 처음부터 다시 시작됩니다.</div>
             <button class="btn-reset" id="btnResetPhases" style="padding:6px 12px;font-size:11px;">⟲ 기본값 복원</button>
           </div>
@@ -144,7 +152,8 @@
 
         <!-- 종소리 탭 -->
         <div class="tab-pane" data-pane="sound">
-          <div class="sound-grid" id="soundGrid">
+          <div class="preset-section-title" style="margin-top:0;">🔔 기본 프리셋</div>
+          <div class="sound-grid" id="builtinSoundGrid">
             <div class="sound-option" data-sound="classic">
               <span>🔔 종 (기본) — 부드러운 1차 + 2차 배음</span>
               <button class="preview-btn" data-preview="classic">미리듣기</button>
@@ -162,6 +171,20 @@
               <button class="preview-btn" data-preview="gong">미리듣기</button>
             </div>
           </div>
+
+          <div class="preset-section-title">🎵 내 종소리 (음성 파일)</div>
+          <div class="drop-zone" id="soundDropZone">
+            <div class="drop-zone-icon">🎵</div>
+            <div class="drop-zone-text">
+              <strong>음성/오디오 파일을 여기에 드래그</strong><br>
+              <span class="drop-zone-hint">또는 클릭해서 선택 · MP3 · WAV · OGG · M4A · 최대 약 1.5MB</span>
+            </div>
+            <input type="file" id="soundFileInput" accept="audio/*" hidden multiple />
+          </div>
+          <div class="sound-grid" id="customSoundGrid" style="margin-top:8px;">
+            <!-- 동적으로 채워짐 -->
+          </div>
+
           <div class="volume-row">
             <label>볼륨</label>
             <input type="range" id="volumeSlider" min="0" max="100" value="70" />
