@@ -40,6 +40,25 @@
       <button class="btn-time-adjust pos" data-delta="60">+1분</button>
     </div>
 
+    <div class="section-label">🔔 알람 테스트</div>
+    <div class="controls">
+      <button class="btn-alert-test" id="btnAlertTest">🔔 다음 알람 +3초 앞으로</button>
+    </div>
+
+    <div class="section-label">투명도</div>
+    <div class="opacity-controls">
+      <div class="opacity-row">
+        <label>📌 팝업</label>
+        <input type="range" id="consolePopupOpacity" min="0" max="100" value="100" />
+        <span class="opacity-val" id="consolePopupOpacityVal">100%</span>
+      </div>
+      <div class="opacity-row">
+        <label>🖥 시계</label>
+        <input type="range" id="consoleClockOpacity" min="0" max="100" value="100" />
+        <span class="opacity-val" id="consoleClockOpacityVal">100%</span>
+      </div>
+    </div>
+
     <div class="section-label">윈도우</div>
     <div class="controls window-controls">
       <button class="btn-secondary" id="btnOpenClock">🖥 시계 창</button>
@@ -133,24 +152,8 @@
             </button>
           </div>
 
-          <div class="opacity-section">
-            <div class="opacity-title">📌 팝업 창 배경 투명도</div>
-            <div class="opacity-hint">PPT 위에 띄우는 팝업의 배경 투명도. 글자/버튼은 그대로 보임. (100% = 불투명, 0% = 완전 투명)</div>
-            <div class="volume-row">
-              <label>팝업</label>
-              <input type="range" id="popupOpacitySlider" min="0" max="100" value="100" />
-              <span class="vol-value" id="popupOpacityValue">100%</span>
-            </div>
-          </div>
-
-          <div class="opacity-section">
-            <div class="opacity-title">🖥 시계 창 배경 투명도</div>
-            <div class="opacity-hint">시계 창도 같은 방식으로 배경만 투명. 상단 영역을 드래그해서 이동, ✕ 버튼으로 닫기.</div>
-            <div class="volume-row">
-              <label>시계</label>
-              <input type="range" id="clockOpacitySlider" min="0" max="100" value="100" />
-              <span class="vol-value" id="clockOpacityValue">100%</span>
-            </div>
+          <div class="opacity-hint" style="margin-top:14px; padding: 10px 14px; background: var(--surface); border-radius:8px; font-size:11px; color:var(--fg-faint);">
+            ℹ️ 팝업/시계 창 투명도는 콘솔 우측 슬라이더에서 직접 조절할 수 있습니다.
           </div>
         </div>
 

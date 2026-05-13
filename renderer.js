@@ -503,6 +503,59 @@ async function toggleClockFullscreen() {
   await window.api.fullscreenClock();
 }
 
+// 알람 테스트: 현재 단계의 다음 울릴 알람 +3초 시점으로 점프 후 자동 시작
+function testNextAlert() {
+  const ph = PHASES[currentIndex];
+  if (!ph || !Array.isArray(ph.alerts) || ph.alerts.length === 0) {
+    alert('이 단계에 알람이 없습니다. 시나리오 편집에서 알람을 추가하세요.');
+    return;
+  }
+  // remainingSec 내림차순 (먼저 울릴 순서)
+  const sorted = [...ph.alerts].sort((a, b) => b.remainingSec - a.remainingSec);
+  // 현재 남은 시간보다 작은 알람 중 가장 큰 것 = 곧 울릴 알람
+  let target = sorted.find((a) => a.remainingSec < remaining);
+  if (!target) {
+    // 현재가 이미 모든 알람보다 작거나 같음 → 가장 큰 알람을 다시 테스트
+    target = sorted[0];
+  }
+  const newRemaining = Math.min(target.remainingSec + 3, ph.sec);
+  ensureAudio();
+  jumpTo(newRemaining);
+  if (!running && newRemaining > 0) {
+    running = true;
+    refresh();
+    tick();
+  }
+}
+
+// 콘솔 투명도 슬라이더
+function initConsoleOpacitySliders() {
+  const popup = $('consolePopupOpacity');
+  const clock = $('consoleClockOpacity');
+  if (popup) {
+    popup.value = settings.popupOpacity;
+    $('consolePopupOpacityVal').textContent = settings.popupOpacity + '%';
+    popup.addEventListener('input', () => {
+      const v = parseInt(popup.value, 10);
+      settings.popupOpacity = v;
+      $('consolePopupOpacityVal').textContent = v + '%';
+      pushState();
+      saveSettings(settings);
+    });
+  }
+  if (clock) {
+    clock.value = settings.clockOpacity;
+    $('consoleClockOpacityVal').textContent = settings.clockOpacity + '%';
+    clock.addEventListener('input', () => {
+      const v = parseInt(clock.value, 10);
+      settings.clockOpacity = v;
+      $('consoleClockOpacityVal').textContent = v + '%';
+      pushState();
+      saveSettings(settings);
+    });
+  }
+}
+
 async function openClock() {
   if (!window.api) return;
   const isOpen = await window.api.isClockOpen();
@@ -1230,6 +1283,7 @@ function bindButtons() {
     btnOpenClock: openClock,
     btnFullscreenClock: toggleClockFullscreen,
     btnTogglePopup: togglePopup,
+    btnAlertTest: testNextAlert,
     btnSettings: openSettings,
     btnSettingsClose: closeSettings,
     btnSettingsCancel: closeSettings,
@@ -1415,6 +1469,7 @@ function handleKey(e) {
 
 document.addEventListener('keydown', handleKey);
 bindButtons();
+initConsoleOpacitySliders();
 refresh();
 
 // 비동기 복원: localStorage가 비어있는 경우 파일에서 복구

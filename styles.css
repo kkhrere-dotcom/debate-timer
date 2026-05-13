@@ -325,6 +325,52 @@ button:active { transform: scale(0.96); }
 .btn-time-adjust.neg { color: color-mix(in srgb, var(--accent-red) 70%, var(--fg)); }
 .btn-time-adjust.pos { color: color-mix(in srgb, var(--accent-blue) 70%, var(--fg)); }
 
+/* 알람 테스트 버튼 */
+.btn-alert-test {
+  flex: 1;
+  background: color-mix(in srgb, var(--accent-purple) 15%, var(--surface));
+  color: var(--accent-purple);
+  border: 1px solid color-mix(in srgb, var(--accent-purple) 40%, transparent);
+}
+.btn-alert-test:hover {
+  background: var(--accent-purple);
+  color: #ffffff;
+  filter: none;
+}
+
+/* 콘솔 투명도 조절 (인라인) */
+.opacity-controls {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.opacity-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.opacity-row label {
+  font-size: 11px;
+  color: var(--fg-faint);
+  font-weight: 700;
+  min-width: 48px;
+}
+.opacity-row input[type="range"] {
+  flex: 1;
+  cursor: pointer;
+}
+.opacity-row .opacity-val {
+  font-size: 11px;
+  color: var(--fg-faint);
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .window-controls button {
   flex: 1;
   min-width: 0;
