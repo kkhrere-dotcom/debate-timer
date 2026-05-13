@@ -19,6 +19,9 @@ function render(state) {
   if (typeof state.clockTitleScale === 'number') {
     document.documentElement.style.setProperty('--clock-title-scale', String(state.clockTitleScale / 100));
   }
+  if (typeof state.clockTimerScale === 'number') {
+    document.documentElement.style.setProperty('--clock-timer-scale', String(state.clockTimerScale / 100));
+  }
 
   const stageEl = $('stage');
   stageEl.textContent = state.stage;

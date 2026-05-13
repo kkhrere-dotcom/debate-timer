@@ -81,7 +81,8 @@ const DEFAULT_SETTINGS = {
   volume: 0.7,
   popupOpacity: 100, // 0-100, 100 = fully opaque
   clockOpacity: 100,
-  clockTitleScale: 100, // 50-200, 100 = 기본 크기
+  clockTitleScale: 100, // 50-300, 100 = 기본 크기
+  clockTimerScale: 100, // 50-300, 100 = 기본 크기
   phases: buildDefaultPhases(),
   scenarioPresets: [],
   customSounds: [],
@@ -111,6 +112,7 @@ function parseSettings(raw) {
       popupOpacity: typeof parsed.popupOpacity === 'number' ? parsed.popupOpacity : 100,
       clockOpacity: typeof parsed.clockOpacity === 'number' ? parsed.clockOpacity : 100,
       clockTitleScale: typeof parsed.clockTitleScale === 'number' ? parsed.clockTitleScale : 100,
+      clockTimerScale: typeof parsed.clockTimerScale === 'number' ? parsed.clockTimerScale : 100,
       phases: Array.isArray(parsed.phases) && parsed.phases.length > 0
         ? ensurePhasesHaveAlerts(parsed.phases)
         : buildDefaultPhases(),
@@ -370,6 +372,7 @@ function snapshot() {
     popupOpacity: view.popupOpacity,
     clockOpacity: view.clockOpacity,
     clockTitleScale: view.clockTitleScale,
+    clockTimerScale: view.clockTimerScale,
     stage: p ? p.stage : '',
     detail: p ? p.detail : '',
     kind: p ? p.kind : 'present',
@@ -577,6 +580,18 @@ function initConsoleOpacitySliders() {
       const v = parseInt(title.value, 10);
       settings.clockTitleScale = v;
       $('consoleClockTitleScaleVal').textContent = v + '%';
+      pushState();
+      saveSettings(settings);
+    });
+  }
+  const timer = $('consoleClockTimerScale');
+  if (timer) {
+    timer.value = settings.clockTimerScale;
+    $('consoleClockTimerScaleVal').textContent = settings.clockTimerScale + '%';
+    timer.addEventListener('input', () => {
+      const v = parseInt(timer.value, 10);
+      settings.clockTimerScale = v;
+      $('consoleClockTimerScaleVal').textContent = v + '%';
       pushState();
       saveSettings(settings);
     });
