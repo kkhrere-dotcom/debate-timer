@@ -96,6 +96,18 @@ body.clock {
   position: relative;
   padding: 24px 32px;
   -webkit-app-region: drag;
+  background: transparent !important;
+}
+/* 별도 배경 레이어 — body 자체는 투명, ::before가 색 + 알파 담당 */
+body.clock::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  opacity: calc(var(--clock-opacity, 100) / 100);
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.15s;
 }
 /* 버튼·인터랙티브 요소는 드래그 제외 */
 body.clock button,
@@ -108,9 +120,6 @@ body.clock .count {
   top: 16px;
   left: 24px;
   right: auto;
-}
-body.with-clock-opacity {
-  background: color-mix(in srgb, var(--bg) calc(var(--clock-opacity, 100) * 1%), transparent);
 }
 
 /* 시계 창 제목·타이머 크기 스케일 (--clock-title-scale, --clock-timer-scale = 1.0 기본) */
