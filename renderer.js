@@ -12,12 +12,12 @@ function defaultAlerts() {
 function buildTeamPhases(teamCount) {
   const phases = [];
   for (let team = 1; team <= teamCount; team++) {
-    phases.push({ stage: '자기주장 발표', detail: team + '팀 발표', sec: 5 * 60, kind: 'present', bellPreset: null, alerts: defaultAlerts() });
+    phases.push({ stage: '자기주장 발표', detail: team + '팀 발표', sec: 5 * 60, kind: 'blue', bellPreset: null, alerts: defaultAlerts() });
     if (team < teamCount) {
-      phases.push({ stage: '준비 시간', detail: (team + 1) + '팀 발표 준비', sec: 3 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
+      phases.push({ stage: '준비 시간', detail: (team + 1) + '팀 발표 준비', sec: 3 * 60, kind: 'orange', bellPreset: null, alerts: defaultAlerts() });
     }
   }
-  phases.push({ stage: '전체 준비 시간', detail: '질의응답 준비 (전체)', sec: 11 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
+  phases.push({ stage: '전체 준비 시간', detail: '질의응답 준비 (전체)', sec: 11 * 60, kind: 'orange', bellPreset: null, alerts: defaultAlerts() });
   for (let answering = 1; answering <= teamCount; answering++) {
     for (let i = 1; i <= teamCount - 1; i++) {
       const asking = ((answering - 1 + i) % teamCount) + 1;
@@ -25,15 +25,15 @@ function buildTeamPhases(teamCount) {
         stage: '질의응답',
         detail: answering + '팀 답변 ← ' + asking + '팀 질의',
         sec: 5 * 60,
-        kind: 'qa',
+        kind: 'green',
         bellPreset: null,
         alerts: defaultAlerts(),
       });
     }
   }
-  phases.push({ stage: '주장다지기 준비', detail: '주장다지기 준비 (전체)', sec: 10 * 60, kind: 'prep', bellPreset: null, alerts: defaultAlerts() });
+  phases.push({ stage: '주장다지기 준비', detail: '주장다지기 준비 (전체)', sec: 10 * 60, kind: 'orange', bellPreset: null, alerts: defaultAlerts() });
   for (let team = teamCount; team >= 1; team--) {
-    phases.push({ stage: '주장다지기', detail: team + '팀 주장다지기', sec: 3 * 60, kind: 'closing', bellPreset: null, alerts: defaultAlerts() });
+    phases.push({ stage: '주장다지기', detail: team + '팀 주장다지기', sec: 3 * 60, kind: 'red', bellPreset: null, alerts: defaultAlerts() });
   }
   return phases;
 }
@@ -51,10 +51,22 @@ function getBuiltinPresets() {
   ];
 }
 
-// 기존 데이터에 alerts 필드가 없으면 기본값 주입 (마이그레이션)
+// 구버전 kind(semantic) → 색상 이름 마이그레이션
+const KIND_MIGRATION = {
+  present: 'blue',
+  prep: 'orange',
+  qa: 'green',
+  closing: 'red',
+};
+function migrateKind(kind) {
+  return KIND_MIGRATION[kind] || kind || 'blue';
+}
+
+// 기존 데이터에 alerts 필드가 없으면 기본값 주입 + kind 마이그레이션
 function ensurePhasesHaveAlerts(phases) {
   return phases.map((p) => ({
     ...p,
+    kind: migrateKind(p.kind),
     alerts: (Array.isArray(p.alerts) && p.alerts.length >= 0) ? p.alerts : defaultAlerts(),
     bellPreset: p.bellPreset === undefined ? null : p.bellPreset,
   }));
@@ -1015,10 +1027,14 @@ function renderPhaseRows() {
       <input data-field="min" type="number" min="0" max="99" value="${Math.floor(ph.sec / 60)}" />
       <input data-field="sec" type="number" min="0" max="59" value="${ph.sec % 60}" />
       <select data-field="kind">
-        <option value="present" ${ph.kind === 'present' ? 'selected' : ''}>발표 (파랑)</option>
-        <option value="prep" ${ph.kind === 'prep' ? 'selected' : ''}>준비 (주황)</option>
-        <option value="qa" ${ph.kind === 'qa' ? 'selected' : ''}>질의응답 (초록)</option>
-        <option value="closing" ${ph.kind === 'closing' ? 'selected' : ''}>마무리 (빨강)</option>
+        <option value="blue"   ${ph.kind === 'blue' ? 'selected' : ''}>🔵 파랑</option>
+        <option value="orange" ${ph.kind === 'orange' ? 'selected' : ''}>🟠 주황</option>
+        <option value="green"  ${ph.kind === 'green' ? 'selected' : ''}>🟢 초록</option>
+        <option value="red"    ${ph.kind === 'red' ? 'selected' : ''}>🔴 빨강</option>
+        <option value="purple" ${ph.kind === 'purple' ? 'selected' : ''}>🟣 보라</option>
+        <option value="pink"   ${ph.kind === 'pink' ? 'selected' : ''}>🩷 핑크</option>
+        <option value="yellow" ${ph.kind === 'yellow' ? 'selected' : ''}>🟡 노랑</option>
+        <option value="cyan"   ${ph.kind === 'cyan' ? 'selected' : ''}>🩵 청록</option>
       </select>
       <select data-field="bellPreset" title="이 단계의 기본 종소리/음성">${buildBellOptions(ph.bellPreset)}</select>
       <button class="phase-alert-btn" data-action="edit-alerts" title="알람 시점 편집">🔔<span class="alert-badge">${alertCount}</span></button>
@@ -1119,7 +1135,7 @@ function addPhase() {
     stage: '새 단계',
     detail: '',
     sec: 60,
-    kind: 'present',
+    kind: 'blue',
     bellPreset: null,
     alerts: defaultAlerts(),
   });

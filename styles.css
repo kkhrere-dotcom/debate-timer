@@ -382,10 +382,15 @@ button:active { transform: scale(0.96); }
   flex: 1;
 }
 
-.stage[data-kind="present"] { color: var(--accent-blue); }
-.stage[data-kind="prep"]    { color: var(--accent-orange); }
-.stage[data-kind="qa"]      { color: var(--accent-green); }
-.stage[data-kind="closing"] { color: var(--accent-red); }
+/* 색상 이름 기반 (신규) + 구버전 semantic 이름 (마이그레이션 폴백) */
+.stage[data-kind="blue"], .stage[data-kind="present"]   { color: var(--accent-blue); }
+.stage[data-kind="orange"], .stage[data-kind="prep"]    { color: var(--accent-orange); }
+.stage[data-kind="green"], .stage[data-kind="qa"]       { color: var(--accent-green); }
+.stage[data-kind="red"], .stage[data-kind="closing"]    { color: var(--accent-red); }
+.stage[data-kind="purple"]  { color: var(--accent-purple); }
+.stage[data-kind="pink"]    { color: var(--accent-pink); }
+.stage[data-kind="yellow"]  { color: var(--accent-yellow); }
+.stage[data-kind="cyan"]    { color: var(--accent-cyan); }
 
 .help {
   font-size: 11px;
@@ -492,10 +497,14 @@ body.popup button { -webkit-app-region: no-drag; }
   text-overflow: ellipsis;
   letter-spacing: -0.3px;
 }
-.popup .popup-stage[data-kind="present"] { color: var(--accent-blue); }
-.popup .popup-stage[data-kind="prep"]    { color: var(--accent-orange); }
-.popup .popup-stage[data-kind="qa"]      { color: var(--accent-green); }
-.popup .popup-stage[data-kind="closing"] { color: var(--accent-red); }
+.popup .popup-stage[data-kind="blue"], .popup .popup-stage[data-kind="present"]   { color: var(--accent-blue); }
+.popup .popup-stage[data-kind="orange"], .popup .popup-stage[data-kind="prep"]    { color: var(--accent-orange); }
+.popup .popup-stage[data-kind="green"], .popup .popup-stage[data-kind="qa"]       { color: var(--accent-green); }
+.popup .popup-stage[data-kind="red"], .popup .popup-stage[data-kind="closing"]    { color: var(--accent-red); }
+.popup .popup-stage[data-kind="purple"]  { color: var(--accent-purple); }
+.popup .popup-stage[data-kind="pink"]    { color: var(--accent-pink); }
+.popup .popup-stage[data-kind="yellow"]  { color: var(--accent-yellow); }
+.popup .popup-stage[data-kind="cyan"]    { color: var(--accent-cyan); }
 
 .popup .popup-timer {
   flex: 1;
