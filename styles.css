@@ -2,7 +2,8 @@
 
 /* ============ 테마 변수 ============ */
 :root,
-:root[data-theme="light"] {
+:root[data-theme="ppt"] {
+  /* PPT 모드: 라이트 — PPT 슬라이드와 자연스럽게 어울리는 화이트 톤 */
   --bg: #ffffff;
   --fg: #1a1a1a;
   --fg-dim: #3c3c43;
@@ -26,7 +27,8 @@
   --shadow-hover: 0 2px 6px rgba(0,0,0,0.12);
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="pdf"] {
+  /* PDF 모드: 다크 — 다크 PDF 뷰어와 어울리는 어두운 톤 */
   --bg: #1c1c1e;
   --fg: #ffffff;
   --fg-dim: #d1d1d6;
@@ -50,31 +52,8 @@
   --shadow-hover: 0 4px 12px rgba(0,0,0,0.6);
 }
 
-:root[data-theme="sepia"] {
-  --bg: #f4ecd8;
-  --fg: #3d3327;
-  --fg-dim: #6b5a3e;
-  --fg-faint: #a08c6b;
-  --fg-very-faint: #c9b896;
-  --border: #d8c8a8;
-  --surface: #efe6cf;
-  --progress-bg: #d8c8a8;
-  --modal-backdrop: rgba(60, 40, 20, 0.3);
-
-  --accent-blue:   #2c5282;
-  --accent-orange: #c05621;
-  --accent-green:  #2f7f4d;
-  --accent-red:    #9b2c2c;
-  --accent-purple: #6b46c1;
-  --accent-pink:   #b83280;
-  --accent-cyan:   #2b6cb0;
-  --accent-yellow: #b7791f;
-
-  --shadow: 0 1px 2px rgba(60,40,20,0.12);
-  --shadow-hover: 0 2px 6px rgba(60,40,20,0.18);
-}
-
-:root[data-theme="navy"] {
+:root[data-theme="clock"] {
+  /* 시계 모드: 네이비 — 시계 표시 전용, 어두운 남색 배경에 또렷한 글자 */
   --bg: #1e2a3a;
   --fg: #e8edf5;
   --fg-dim: #c5cdde;
@@ -427,7 +406,7 @@ body.popup button { -webkit-app-region: no-drag; }
 /* 테마 선택 */
 .theme-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
 .theme-card {

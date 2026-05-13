@@ -63,7 +63,7 @@ function ensurePhasesHaveAlerts(phases) {
 // ============ 설정 ============
 const SETTINGS_KEY = 'debateTimer.settings.v1';
 const DEFAULT_SETTINGS = {
-  theme: 'light',
+  theme: 'ppt',
   title: '과학토론대회',
   bellPreset: 'classic',
   volume: 0.7,
@@ -74,12 +74,24 @@ const DEFAULT_SETTINGS = {
   customSounds: [],
 };
 
+// 구버전 테마명을 새 이름으로 마이그레이션
+function migrateThemeName(theme) {
+  switch (theme) {
+    case 'light': return 'ppt';
+    case 'dark':  return 'pdf';
+    case 'sepia': return 'ppt';
+    case 'navy':  return 'clock';
+    case 'ppt': case 'pdf': case 'clock': return theme;
+    default: return DEFAULT_SETTINGS.theme;
+  }
+}
+
 function parseSettings(raw) {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
     return {
-      theme: parsed.theme || DEFAULT_SETTINGS.theme,
+      theme: migrateThemeName(parsed.theme),
       title: parsed.title || DEFAULT_SETTINGS.title,
       bellPreset: parsed.bellPreset || DEFAULT_SETTINGS.bellPreset,
       volume: typeof parsed.volume === 'number' ? parsed.volume : DEFAULT_SETTINGS.volume,

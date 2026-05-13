@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme || 'light';
+  document.documentElement.dataset.theme = theme || 'ppt';
 }
 
 function applyTitle(title) {
