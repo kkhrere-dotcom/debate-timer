@@ -32,7 +32,7 @@ jobs:
         run: npm ci
 
       - name: Build Windows installer
-        run: npm run build:win
+        run: npx electron-builder --win --publish never
         env:
           # 서명 안 함 (Developer ID 없음). SmartScreen 경고는 사용자가 수동 통과.
           CSC_IDENTITY_AUTO_DISCOVERY: false
