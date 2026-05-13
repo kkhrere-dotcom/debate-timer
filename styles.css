@@ -255,6 +255,87 @@ button:active { transform: scale(0.96); }
 .btn-popup     { background: var(--accent-pink); }
 .btn-settings  { background: var(--fg-dim); }
 
+/* 정돈된 보조 버튼: 차분한 회색 톤 */
+.btn-secondary {
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  background: var(--bg);
+  border-color: var(--fg-faint);
+  filter: none;
+}
+.btn-danger-soft {
+  background: color-mix(in srgb, var(--accent-red) 15%, var(--surface));
+  color: var(--accent-red);
+  border: 1px solid color-mix(in srgb, var(--accent-red) 40%, transparent);
+}
+.btn-danger-soft:hover {
+  background: var(--accent-red);
+  color: #ffffff;
+  filter: none;
+}
+.btn-settings-icon {
+  background: transparent;
+  color: var(--fg-faint);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+.btn-settings-icon:hover {
+  background: var(--surface);
+  color: var(--fg);
+  filter: none;
+}
+
+/* 시간 감기 segmented control */
+.time-adjust-group {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  margin-bottom: 4px;
+}
+.btn-time-adjust {
+  background: transparent;
+  color: var(--fg);
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  padding: 9px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: none;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+.btn-time-adjust:last-child { border-right: none; }
+.btn-time-adjust:hover {
+  background: var(--bg);
+  filter: none;
+}
+.btn-time-adjust:active {
+  background: var(--accent-blue);
+  color: #ffffff;
+}
+.btn-time-adjust.neg { color: color-mix(in srgb, var(--accent-red) 70%, var(--fg)); }
+.btn-time-adjust.pos { color: color-mix(in srgb, var(--accent-blue) 70%, var(--fg)); }
+
+.window-controls button {
+  flex: 1;
+  min-width: 0;
+}
+.settings-row {
+  margin-top: 4px;
+}
+.settings-row button {
+  flex: 1;
+}
+
 .stage[data-kind="present"] { color: var(--accent-blue); }
 .stage[data-kind="prep"]    { color: var(--accent-orange); }
 .stage[data-kind="qa"]      { color: var(--accent-green); }

@@ -18,44 +18,37 @@
     <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
     <div class="next" id="next">다음 ▶ 준비 시간 · 2팀 발표 준비</div>
 
-    <div class="controls main-controls">
+    <div class="controls primary-controls">
       <button class="btn-start big" id="btnStart">▶ 시작</button>
     </div>
-    <div class="controls">
-      <button class="btn-nav"   id="btnPrev">⏮ 이전</button>
-      <button class="btn-nav"   id="btnNext">⏭ 다음</button>
-      <button class="btn-reset" id="btnReset">↻ 초기화</button>
-      <button class="btn-reset-all" id="btnResetAll">⟲ 전체초기화</button>
+    <div class="controls nav-controls">
+      <button class="btn-secondary" id="btnPrev">⏮ 이전</button>
+      <button class="btn-secondary" id="btnNext">⏭ 다음</button>
+      <button class="btn-secondary" id="btnReset">↻ 초기화</button>
+      <button class="btn-danger-soft" id="btnResetAll">⟲ 전체초기화</button>
     </div>
 
     <div class="section-label">⏩ 시간 감기</div>
-    <div class="controls">
-      <button class="btn-skip" id="btnMinus60">−1분</button>
-      <button class="btn-skip" id="btnMinus10">−10초</button>
-      <button class="btn-skip" id="btnPlus10">+10초</button>
-      <button class="btn-skip" id="btnPlus60">+1분</button>
+    <div class="time-adjust-group">
+      <button class="btn-time-adjust neg" data-delta="-60">−1분</button>
+      <button class="btn-time-adjust neg" data-delta="-10">−10초</button>
+      <button class="btn-time-adjust neg" data-delta="-5">−5초</button>
+      <button class="btn-time-adjust neg" data-delta="-1">−1초</button>
+      <button class="btn-time-adjust pos" data-delta="1">+1초</button>
+      <button class="btn-time-adjust pos" data-delta="5">+5초</button>
+      <button class="btn-time-adjust pos" data-delta="10">+10초</button>
+      <button class="btn-time-adjust pos" data-delta="60">+1분</button>
     </div>
 
-    <div class="section-label">🔔 종소리 테스트</div>
-    <div class="controls">
-      <button class="btn-test" id="btnTestWarning">🔔 30초 경고로</button>
-      <button class="btn-test" id="btnTestEnd">🏁 종료음으로</button>
+    <div class="section-label">윈도우</div>
+    <div class="controls window-controls">
+      <button class="btn-secondary" id="btnOpenClock">🖥 시계 창</button>
+      <button class="btn-secondary" id="btnFullscreenClock">⛶ 전체화면</button>
+      <button class="btn-secondary" id="btnTogglePopup">📌 팝업</button>
     </div>
 
-    <div class="section-label">🖥 시계 창</div>
-    <div class="controls">
-      <button class="btn-clock" id="btnOpenClock">열기</button>
-      <button class="btn-clock" id="btnFullscreenClock">⛶ 전체화면</button>
-    </div>
-
-    <div class="section-label">📌 팝업 (PPT 위에 띄우기)</div>
-    <div class="controls">
-      <button class="btn-popup" id="btnTogglePopup">📌 팝업 열기/닫기</button>
-    </div>
-
-    <div class="section-label">⚙ 설정</div>
-    <div class="controls">
-      <button class="btn-settings" id="btnSettings">⚙ 설정 열기</button>
+    <div class="controls settings-row">
+      <button class="btn-settings-icon" id="btnSettings" title="설정">⚙ 설정</button>
     </div>
 
     <div class="help">Space=시작/정지 · ←→=이전/다음 · R=초기화</div>

@@ -1227,12 +1227,6 @@ function bindButtons() {
     btnNext: nextPhase,
     btnReset: resetCurrent,
     btnResetAll: resetAll,
-    btnMinus60: () => adjustTime(-60),
-    btnMinus10: () => adjustTime(-10),
-    btnPlus10:  () => adjustTime(10),
-    btnPlus60:  () => adjustTime(60),
-    btnTestWarning: () => { ensureAudio(); jumpTo(35); },
-    btnTestEnd:     () => { ensureAudio(); jumpTo(5); },
     btnOpenClock: openClock,
     btnFullscreenClock: toggleClockFullscreen,
     btnTogglePopup: togglePopup,
@@ -1259,6 +1253,14 @@ function bindButtons() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', fn);
   }
+
+  // 시간 감기 버튼 (data-delta 속성)
+  document.querySelectorAll('.btn-time-adjust[data-delta]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const delta = parseInt(b.dataset.delta, 10) || 0;
+      adjustTime(delta);
+    });
+  });
 
   // 드래그앤드롭 영역
   const dropZone = $('soundDropZone');
