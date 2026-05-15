@@ -97,10 +97,37 @@ function createClockWindow() {
     },
   });
   clockWindow.webContents.setBackgroundThrottling(false);
+
+  // 전체화면 중 Esc/Enter는 main 프로세스에서도 잡음 (렌더러 포커스 못 받는 상황 안전망)
+  clockWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+    if (!clockIsFs) return;
+    if (input.key === 'Escape' || input.key === 'Enter') {
+      event.preventDefault();
+      toggleClockFullscreenInternal();
+    }
+  });
+
+  // Windows에서 사용자가 F11 등으로 fullscreen 상태가 외부에서 바뀐 경우 동기화
+  clockWindow.on('leave-full-screen', () => {
+    if (process.platform !== 'darwin' && clockIsFs) {
+      clockIsFs = false;
+      clockWindow.webContents.send('clock-fullscreen-changed', false);
+    }
+  });
+  clockWindow.on('enter-full-screen', () => {
+    if (process.platform !== 'darwin' && !clockIsFs) {
+      clockIsFs = true;
+      clockWindow.webContents.send('clock-fullscreen-changed', true);
+    }
+  });
+
   clockWindow.loadFile('clock.html');
 
   clockWindow.on('closed', () => {
     clockWindow = null;
+    clockSavedBounds = null;
+    clockIsFs = false;
     if (consoleWindow && !consoleWindow.isDestroyed()) {
       consoleWindow.webContents.send('clock-closed');
     }
@@ -261,12 +288,33 @@ ipcMain.handle('clock:close', () => {
   if (clockWindow && !clockWindow.isDestroyed()) clockWindow.close();
 });
 ipcMain.handle('clock:is-open', () => !!(clockWindow && !clockWindow.isDestroyed()));
+// 전체화면 토글:
+//  - macOS: transparent 창 + native fullscreen은 창이 사라지는 버그가 있어 수동 setBounds로 흉내냄
+//  - Windows/Linux: 네이티브 setFullScreen 사용 (안정적)
+let clockSavedBounds = null;
+let clockSavedAlwaysOnTop = false;
+let clockIsFs = false;
 function toggleClockFullscreenInternal() {
   if (!clockWindow || clockWindow.isDestroyed()) return false;
-  // setSimpleFullScreen은 native fullscreen보다 안정적 (애니메이션·새 Space 안 만듦)
-  const isFs = clockWindow.isSimpleFullScreen();
-  const newState = !isFs;
-  clockWindow.setSimpleFullScreen(newState);
+  const newState = !clockIsFs;
+  if (process.platform === 'darwin') {
+    if (newState) {
+      clockSavedBounds = clockWindow.getBounds();
+      clockSavedAlwaysOnTop = clockWindow.isAlwaysOnTop();
+      const display = screen.getDisplayMatching(clockSavedBounds);
+      const b = display.bounds;
+      clockWindow.setBounds({ x: b.x, y: b.y, width: b.width, height: b.height });
+      clockWindow.setAlwaysOnTop(true, 'screen-saver');
+      clockWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    } else {
+      if (clockSavedBounds) clockWindow.setBounds(clockSavedBounds);
+      clockWindow.setAlwaysOnTop(clockSavedAlwaysOnTop);
+      clockSavedBounds = null;
+    }
+  } else {
+    clockWindow.setFullScreen(newState);
+  }
+  clockIsFs = newState;
   clockWindow.webContents.send('clock-fullscreen-changed', newState);
   return newState;
 }
