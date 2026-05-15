@@ -421,35 +421,51 @@ function refresh() {
   pushState();
 }
 
+// 절대시각 기반 기준점: 스로틀링/슬립으로 setTimeout이 늦게 호출되어도
+// 표시 시간이 wall clock에 맞춰 자가 보정됨.
+let runStartMs = 0;
+let runStartRemaining = 0;
+
+function rebaseTick() {
+  runStartMs = Date.now();
+  runStartRemaining = remaining;
+}
+
 function tick() {
   if (!running) return;
-  if (remaining > 0) {
-    remaining -= 1;
-    refresh();
+  const p = PHASES[currentIndex];
+  const alerts = (p && Array.isArray(p.alerts) && p.alerts.length > 0)
+    ? p.alerts
+    : defaultAlerts();
 
-    const p = PHASES[currentIndex];
-    const alerts = (p && Array.isArray(p.alerts) && p.alerts.length > 0)
-      ? p.alerts
-      : defaultAlerts();
-    alerts.forEach((a) => {
-      if (a.remainingSec === remaining) playAlert(a.soundPreset);
-    });
+  const elapsed = Math.floor((Date.now() - runStartMs) / 1000);
+  const newRemaining = Math.max(0, runStartRemaining - elapsed);
 
-    if (remaining === 0) {
-      // 시나리오의 마지막 단계 종료 시 종을 한 번 더 (대회 종료 효과)
-      const isLastPhase = currentIndex === PHASES.length - 1;
-      if (isLastPhase) {
-        const zeroAlert = alerts.find((a) => a.remainingSec === 0);
-        const secondPreset = zeroAlert ? zeroAlert.soundPreset : null;
-        setTimeout(() => playAlert(secondPreset), 700);
-      }
-      running = false;
-      refresh();
-      setTimeout(() => { if (currentIndex + 1 < PHASES.length) nextPhase(); }, 2500);
-      return;
+  if (newRemaining < remaining) {
+    // 한 틱에 여러 초가 지났을 수 있음 → 건너뛴 알람도 모두 발사
+    for (let r = remaining - 1; r >= newRemaining; r--) {
+      alerts.forEach((a) => { if (a.remainingSec === r) playAlert(a.soundPreset); });
     }
+    remaining = newRemaining;
+    refresh();
   }
-  timerId = setTimeout(tick, 1000);
+
+  if (remaining === 0) {
+    const isLastPhase = currentIndex === PHASES.length - 1;
+    if (isLastPhase) {
+      const zeroAlert = alerts.find((a) => a.remainingSec === 0);
+      const secondPreset = zeroAlert ? zeroAlert.soundPreset : null;
+      setTimeout(() => playAlert(secondPreset), 700);
+    }
+    running = false;
+    refresh();
+    setTimeout(() => { if (currentIndex + 1 < PHASES.length) nextPhase(); }, 2500);
+    return;
+  }
+
+  // 다음 정초 경계에 깨도록 정렬 (누적 drift 방지)
+  const nextDelay = 1000 - ((Date.now() - runStartMs) % 1000);
+  timerId = setTimeout(tick, nextDelay);
 }
 
 function toggleRun() {
@@ -457,7 +473,7 @@ function toggleRun() {
   ensureAudio();
   running = !running;
   refresh();
-  if (running) tick();
+  if (running) { rebaseTick(); tick(); }
   else if (timerId) { clearTimeout(timerId); timerId = null; }
 }
 
@@ -507,12 +523,14 @@ function resetAll() {
 function adjustTime(delta) {
   const maxSec = PHASES[currentIndex] ? PHASES[currentIndex].sec : 0;
   remaining = Math.max(0, Math.min(maxSec, remaining + delta));
+  if (running) rebaseTick();
   refresh();
 }
 
 function jumpTo(sec) {
   const maxSec = PHASES[currentIndex] ? PHASES[currentIndex].sec : 0;
   remaining = Math.max(0, Math.min(maxSec, sec));
+  if (running) rebaseTick();
   refresh();
 }
 
@@ -542,6 +560,7 @@ function testNextAlert() {
   if (!running && newRemaining > 0) {
     running = true;
     refresh();
+    rebaseTick();
     tick();
   }
 }

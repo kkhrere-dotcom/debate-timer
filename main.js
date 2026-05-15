@@ -55,8 +55,11 @@ function createConsoleWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
     },
   });
+  // 가려져 있어도 렌더러가 풀스피드로 돌도록 (타이머 정확도 유지)
+  consoleWindow.webContents.setBackgroundThrottling(false);
   consoleWindow.loadFile('index.html');
   consoleWindow.on('closed', () => {
     consoleWindow = null;
@@ -90,8 +93,10 @@ function createClockWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
     },
   });
+  clockWindow.webContents.setBackgroundThrottling(false);
   clockWindow.loadFile('clock.html');
 
   clockWindow.on('closed', () => {
@@ -131,8 +136,10 @@ function createPopupWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
     },
   });
+  popupWindow.webContents.setBackgroundThrottling(false);
   // PPT/PDF 전체화면 위에도 뜨도록 강력한 always-on-top 설정
   popupWindow.setAlwaysOnTop(true, 'screen-saver');
   popupWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
